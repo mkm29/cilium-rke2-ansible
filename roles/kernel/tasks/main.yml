@@ -1,0 +1,43 @@
+---
+- name: Import elrepo repo key
+  ansible.builtin.rpm_key:
+    key: "{{ kernel_elrepo_repo_gpg_key_url }}"
+    state: present
+- name: Install elrepo repo
+  ansible.builtin.dnf:
+    name: "{{ kernel_elrepo_repo_url }}"
+    state: present
+- name: Install kernel packages
+  ansible.builtin.dnf:
+    name: "{{ item }}-{{ kernel_version }}"
+    state: latest
+    enablerepo: elrepo-kernel
+  with_items: "{{ kernel_elrepo_packages }}"
+  become: true
+- name: Disable selinux
+  ansible.posix.selinux:
+    state: "{{ kernel_selinux_mode }}"
+    policy: "{{ kernel_selinux_policy }}"
+  become: true
+# These packages must be installed after kernel headers are updated
+- name: Install extra packages
+  ansible.builtin.dnf:
+    name: "{{ kernel_extra_packages }}"
+    state: "latest"
+# clean up old kernels
+- name: Remove old kernels
+  ansible.builtin.dnf:
+    cmd: "dnf remove --oldinstallonly kernel -y"
+  become: true
+  when: kernel_remove_old_kernels
+# get the latest kernel version
+# - name: Get latest kernel version
+#   ansible.builtin.command:
+#     cmd: "rpm -q kernel-ml --qf '%{version}-%{release}.%{arch}\n' | sort -V | tail -n 1"
+#   register: kernel_version
+# now set the default kernel
+- name: Set default kernel
+  ansible.builtin.command:
+    cmd: "grubby --set-default /boot/vmlinuz-{{ kernel_version }}"
+  # when: kernel_version.stdout is defined
+  become: true

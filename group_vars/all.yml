@@ -1,0 +1,16 @@
+ansible_user: root
+
+ansible_ssh_private_key_file: ~/.ssh/id_rs
+
+k8s_vm_network: default
+
+#VM image to download
+vm_image_url: https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
+#vm_image_path: "{{playbook_dir}}/jammy-server-cloudimg-amd64.img"
+vm_boot_config_file: "/boot/config-5.15.0-1044-kvm"
+
+#Path where to store VM images
+libvirt_vm_path: /var/lib/libvirt/images
+
+# Name of the VM to create
+k8s_vm_disk_size: "20G"

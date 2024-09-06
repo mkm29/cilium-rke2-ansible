@@ -1,0 +1,15 @@
+---
+
+- name: Setting up the infrastructure
+  # become: true
+  hosts: localhost
+  gather_facts: yes
+  roles:
+    - role: init
+    # - role: kernel
+    - role: network
+      become: true
+    - role: storage
+    - role: cilium
+      when: rke2_role == "server"
+    - role: rke2

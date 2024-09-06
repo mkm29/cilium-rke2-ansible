@@ -1,0 +1,103 @@
+- name: Ensure VM is running
+  command: "virsh dominfo {{k8s_vm_name}}"
+  ignore_errors: true
+  register: virsh_dominfo_existing_vm
+  become: true
+  run_once: true
+  delegate_to: localhost
+
+- name: Start VM
+  command: "virsh start {{ k8s_vm_name }}"
+  become: true
+  run_once: true  
+  delegate_to: localhost
+  when: 'virsh_dominfo_existing_vm.stdout is defined and "shut off" in virsh_dominfo_existing_vm.stdout'
+
+- name: "Get IP of VM {{ k8s_vm_name }}"
+  command: "virsh domifaddr {{ k8s_vm_name }}"
+  become: true
+  run_once: true  
+  delegate_to: localhost
+  register: virsh_domifaddr
+  until: '"ipv4" in virsh_domifaddr.stdout'
+  retries: 100
+  delay: 10
+
+- name: Set raw IP address
+  set_fact: 
+    virsh_ifaddr: "{{virsh_domifaddr.stdout_lines[2].split('ipv4')[1][:-3]}}"
+
+- name: Set K8S IP address
+  set_fact:
+    k8s_vm_ip: '{{ virsh_ifaddr | replace(" ","") }}'
+
+- name: Add host to group 'k8s'
+  add_host:
+    name: '{{ k8s_vm_name }}'
+    ansible_ssh_host: '{{ k8s_vm_ip }}'
+    ansible_default_ipv4: '{{ k8s_vm_ip }}'
+    groups: k8s-cluster
+
+- name: Remove host from /etc/hosts
+  delegate_to: localhost
+  run_once: true
+  become: true
+  lineinfile:
+    path: /etc/hosts
+    regexp: '{{ inventory_hostname }}'
+    state: absent
+
+- name: Remove host IP from /etc/hosts
+  delegate_to: localhost
+  run_once: true
+  become: true
+  lineinfile:
+    path: /etc/hosts
+    regexp: '{{ k8s_vm_ip }}'
+    state: absent
+
+- name: Add host to /etc/hosts on localhost
+  lineinfile:
+    path: /etc/hosts
+    regexp: '/{{ inventory_hostname }}/'
+    line: '{{ k8s_vm_ip }} {{ inventory_hostname }}'
+  become: true
+  run_once: true
+  delegate_to: localhost    
+
+
+- name: "Check SSH known_hosts"
+  local_action: "shell ssh-keygen -F {{ k8s_vm_ip }}"
+  register: checkForKnownHostsEntry
+  failed_when: false
+  changed_when: false
+  ignore_errors: yes
+
+- name: Add {{ inventory_hostname }} to SSH known hosts automatically
+#  when: checkForKnownHostsEntry.rc == 1
+#  changed_when: checkForKnownHostsEntry.rc == 1
+  set_fact:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
+- name: Wait for connection
+  wait_for_connection:
+    timeout: 60
+  vars:
+    ansible_ssh_private_key_file: "{{ lookup('env','HOME') }}/.ssh/id_rsa"
+
+# Rezie disk
+- name: Debug resize disk
+  debug:
+    msg: "Resizing disk {{ k8s_vm_path }} to {{ k8s_vm_disk_size }}"
+  run_once: true
+  delegate_to: localhost
+
+- name: "Grow partition for vm {{ k8s_vm_name }}"
+  command: "growpart /dev/vda 1"
+  become: true
+  run_once: true
+
+- name: "Resize filesystem for vm {{ k8s_vm_name }}"
+  command: "resize2fs /dev/vda1"
+  become: true
+  run_once: true

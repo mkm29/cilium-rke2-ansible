@@ -1,0 +1,36 @@
+---
+
+- name: Ensure KVM is Installed and Loaded
+  include_tasks: install-kvm.yaml
+
+- name: Delete VM if required
+  import_tasks: delete-vm.yaml
+  when: kvm_vm_reprovision | bool 
+
+- name: Check if VM exists
+  command: "virsh dominfo {{k8s_vm_name}}"
+  ignore_errors: true
+  register: virsh_dominfo
+  become: true
+  run_once: true
+  delegate_to: localhost
+
+# - name: Print virsh_dominfo
+#   debug:
+#     var: virsh_dominfo
+#   delegate_to: localhost
+
+- name: Create VM if it doesn't exist
+  import_tasks: create-vm.yaml
+  when: virsh_dominfo.rc == 1
+
+- name: Start VM
+  command: "virsh start {{ k8s_vm_name }}"
+  become: true
+  run_once: true  
+  delegate_to: localhost
+  when: 'virsh_dominfo.stdout is defined and "shut off" in virsh_dominfo.stdout'
+
+- name: Add VM to inventory
+  import_tasks: add-vm-inventory.yaml
+

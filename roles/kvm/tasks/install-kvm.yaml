@@ -1,0 +1,42 @@
+---
+- name: Install and Verify KVM
+  delegate_to: localhost
+  become: true
+  block:
+  - name: Update apt cache
+    apt:
+      update_cache: true
+      cache_valid_time: 3600 
+  - name: Ensure KVM and dependencies are installed
+    apt:
+      name:
+        - qemu-kvm
+        - libvirt-daemon-system
+        - libvirt-clients
+        - bridge-utils
+        - virtinst
+        - virt-manager
+      state: present
+
+  - name: Ensure the libvirt service is started and enabled
+    service:
+      name: libvirtd
+      state: started
+      enabled: true
+
+  - name: Ensure the KVM kernel module is loaded
+    command: modprobe kvm
+    register: kvm_module_status
+    failed_when: "'not found' in kvm_module_status.stderr"
+
+  # - name: Verify KVM is successfully loaded
+  #   command: lsmod | grep kvm
+  #   register: kvm_lsmod
+  #   changed_when: false
+
+  - name: Ensure current user is part of the libvirt group
+    user:
+      name: "{{ lookup('env', 'USER') }}"
+      groups: libvirt
+      append: true
+    become: true
