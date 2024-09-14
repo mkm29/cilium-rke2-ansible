@@ -1,0 +1,11 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: ingress-nginx
+  namespace: kube-system
+spec:
+  chart: oci://ghcr.io/nginxinc/charts/nginx-ingress
+  targetNamespace: ingress-nginx
+  version: "18.1.12"
+  valuesContent: |-
+    controller.hostNetwork: true

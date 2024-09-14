@@ -19,7 +19,7 @@ k8s-cluster:
       cilium_peer_cluster_address: cilium-demo-cluster1.kubula.internal
       rke2_egress_selector_mode: "disabled"
       rke2_protect_kernel_defaults: true
-      cilium_ipam_mode: "kubernetes"
+      cilium_ipam_mode: "cluster-pool"
     w1:
       ansible_host: 192.168.1.111
       rke2_cluster_name: "cilium-demo-cluster2"
