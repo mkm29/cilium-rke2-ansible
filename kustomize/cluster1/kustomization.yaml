@@ -2,3 +2,4 @@ resources:
 - ../base/
 - ingress.yaml
 - metallb-values.yaml
+- global-svc.yaml

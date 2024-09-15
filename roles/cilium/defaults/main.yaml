@@ -1,0 +1,2 @@
+cilium_clustermesh_apiserver_service_type: NodePort
+cilium_apiserver_port: 32379

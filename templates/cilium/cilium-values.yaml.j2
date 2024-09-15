@@ -62,23 +62,18 @@ operator:
 #        extraDnsNames:
 #          - "*.{{ cilium_default_domain }}"
 clustermesh:
+  useAPIServer: true
+  enableEndpointSliceSynchronization: true
   apiserver:
+    service:
+      type: {{ cilium_clustermesh_apiserver_service_type }}
+{% if cilium_clustermesh_apiserver_service_type == "NodePort" %}  
+      nodePort: {{ cilium_apiserver_port }}
+{% endif %}
     metrics:
       enabled: {{ cilium_clustermesh_apiserver_metrics_enabled | to_yaml | lower }}
       serviceMonitor:
         enabled: {{ cilium_clustermesh_apiserver_service_monitor_enabled | to_yaml | lower }}
-#  config:
-#    enabled: true
-#    domain: {{ cilium_default_domain }}
-#    clusters:
-#      - name: {{ cilium_peer_cluster_name }}
-#        address: {{ cilium_peer_cluster_address }}
-#        port: {{ cilium_peer_apiserver_port }}
-  useAPIServer: true
-  enableEndpointSliceSynchronization: true
-  service:
-    type: NodePort
-    nodePort: {{ cilium_apiserver_port }}
 kubeProxyReplacement: {{ cilium_kube_proxy_replacement }}
 ipam:
   mode: {{ cilium_ipam_mode }}

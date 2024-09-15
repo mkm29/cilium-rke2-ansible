@@ -13,10 +13,7 @@ k8s-cluster:
     #   cilium_install: true
     #   cilium_default_domain: "cilium-demo-cluster1.kubula.internal"
     #   cilium_mesh_cluster_id: "01"
-    #   cilium_apiserver_port: 32379
-    #   cilium_peer_apiserver_port: 32380
-    #   cilium_peer_cluster_name: cilium-demo-cluster2
-    #   cilium_peer_cluster_address: cilium-demo-cluster2.kubula.internal
+    #   cilium_clustermesh_apiserver_service_type: LoadBalancer
     #   rke2_egress_selector_mode: "disabled"
     #   rke2_protect_kernel_defaults: true
     #   cilium_ipam_mode: "cluster-pool"
