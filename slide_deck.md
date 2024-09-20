@@ -9,6 +9,7 @@
 ---
 
 ## **Slide 2: Introduction to Cilium Cluster Mesh (2 minutes)**
+Cilium was first released in July 2017. It was developed to solve the challenges of securing and managing network traffic for microservices in modern containerized environments like Kubernetes. The primary objective of Cilium was to use eBPF (extended Berkeley Packet Filter), a technology in the Linux kernel, to improve observability, networking, and security within clusters.
 - **What is Cilium Cluster Mesh?**
   - Multi-cluster networking powered by Cilium.
   - Enables seamless inter-cluster communication.
@@ -101,13 +102,14 @@
   - It allows you to define both L3/L4 (IP, port) and L7 (protocol) policies using eBPF, giving precise control over which pods can access specific services.
 
 - **Securing CoreDNS Example**:
-  - Use `CiliumNetworkPolicy` to restrict access to the CoreDNS service.
+  - Use `CiliumNetworkPolicy` to restrict access to the CoreDNS service, allowing ingress from any endpoint in the `kube-system`, `metallb-system`, and `ingress-nginx` namespaces.
   - Example policy:
     ```yaml
     apiVersion: cilium.io/v2
     kind: CiliumNetworkPolicy
     metadata:
       name: coredns-restriction
+      namespace: kube-system
     spec:
       endpointSelector:
         matchLabels:
@@ -115,7 +117,23 @@
       ingress:
       - fromEndpoints:
         - matchLabels:
-            app: allowed-app
+            k8s:io.kubernetes.pod.namespace: kube-system
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: metallb-system
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: ingress-nginx
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: cilium-spire
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-node-lease
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-public
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: storage
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: allow-dns-access
         toPorts:
         - ports:
           - port: "53"
@@ -125,9 +143,9 @@
     ```
 
 - **Key Benefits**:
-  - Prevent unauthorized pods from querying DNS.
-  - Limit the exposure of CoreDNS to only trusted applications, improving the security posture of your cluster.
-  - Easy to implement and manage with Cilium’s eBPF-powered policies.
+  - Only allows necessary components (e.g., system services, ingress controllers, load balancers) to access CoreDNS.
+  - Reduces potential attack surface by limiting the number of services that can query DNS.
+  - Easily managed with Cilium’s dynamic, eBPF-based policies, ensuring high performance and security.
 
 ---
 
@@ -161,7 +179,54 @@
 - Show the global service routing using DNS-based service discovery.
 - Demonstrate load balancing between the two clusters.
 
+**Use** the following links:
+
+```
+grafana creds: admin/PNlYcVNil0lfQs0pZ9jaNkWXgPXPLGVifkCkanF6
+
+nslookup http://lgtm-distributed-mimir-nginx.monitoring.svc.cluster.local
+
+# shared ingress
+ingress.cluster1.kubula.internal
+ingress.cluster2.kubula.internal
+
+# scale one deployment down to 0 and retry
+
+# sahred services
+For this either rebel-base of x-web. x-web is only deployed on cluster1, but cluster2 can access it
+rebel-base.cluster1.kubula.internal
+rebel-base.cluster2.kubula.internal
+```
+
 ---
+
+## **Step 5: Mutual Auth (1 minute)**
+
+Verify the list of attested agents:
+
+```
+kubectl exec -n cilium-spire spire-server-0 -c spire-server -- /opt/spire/bin/spire-server agent list
+```
+
+Verify SPIFFE Identities:
+
+```
+kubectl exec -n cilium-spire spire-server-0 -c spire-server -- /opt/spire/bin/spire-server entry show -parentID spiffe://spiffe.cilium/ns/cilium-spire/sa/spire-agent
+```
+
+Now verify that the echo Pod has an Identity registered with the SPIRE server:
+
+```
+IDENTITY_ID=$(kubectl get cep -l app=echo -o=jsonpath='{.items[0].status.identity.id}')
+echo $IDENTITY_ID
+kubectl exec -n cilium-spire spire-server-0 -c spire-server -- /opt/spire/bin/spire-server entry show -spiffeID spiffe://spiffe.cilium/identity/$IDENTITY_ID
+```
+
+When you apply a mutual authentication policy, the agent retrieves the identity of the source Pod, connects to the node where the destination Pod is running and performs a mutual TLS handshake (with the log above showing one side of the mutual TLS handshake).
+
+```
+kubectl -n kube-system -c cilium-agent logs cilium-9pshw --timestamps=true | grep "Policy is requiring authentication\|Validating Server SNI\|Validated certificate\|Successfully authenticated"
+```
 
 ## **Step 4: Shared Ingress (3 minutes)**
 - Show how NGINX Ingress balances traffic across clusters using `nginx.ingress.kubernetes.io/service-upstream`.

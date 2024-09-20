@@ -190,18 +190,23 @@ loki.process "pods" {
 
 loki.write "default" {
 	external_labels = {
-		cluster = "cilium-demo-cluster2",
+		cluster = "cilium-demo-cluster1",
 	}
 	endpoint {
 		url = "http://lgtm-distributed-loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
+		tenant_id = "cilium-demo-cluster1"
 	}
 }
 
 prometheus.remote_write "mimir" {
 	external_labels = {
-		cluster = "cilium-demo-cluster2",
+		cluster = "cilium-demo-cluster1",
 	}
 	endpoint {
 		url     = "http://lgtm-distributed-mimir-nginx.monitoring.svc.cluster.local/api/v1/push"
+
+		headers = {
+			"X-Scope-OrgID" = "cilium-demo-cluster1",
+		}
 	}
 }

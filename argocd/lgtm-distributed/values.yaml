@@ -100,6 +100,10 @@ mimir:
     resources:
       requests:
         cpu: 20m
+    persistence:
+      storageClass: nfs-client
+      size: 500Gi
+
   rollout_operator:
     resources:
       requests:
@@ -110,6 +114,34 @@ mimir:
       ingestion_rate: 400000
       ingestion_burst_size: 2000000
       out_of_order_time_window: 15m
+
+  runtimeConfig:
+    ingester_limits: # limits that each ingester replica enforces
+      max_ingestion_rate: 60000
+      max_series: 4500000
+      max_tenants: 1000
+      max_inflight_push_requests: 60000
+  #   distributor_limits: # limits that each distributor replica enforces
+  #     max_ingestion_rate: 20000
+  #     max_inflight_push_requests: 30000
+  #     max_inflight_push_requests_bytes: 50000000
+    overrides:
+      cilium-demo-cluster1: # limits for tenant-1 that the whole cluster enforces
+        ingestion_tenant_shard_size: 9
+        max_global_series_per_user: 4500000
+        max_fetched_series_per_query: 100000
+        out_of_order_time_window: 5m
+      cilium-demo-cluster2: # limits for tenant-1 that the whole cluster enforces
+        ingestion_tenant_shard_size: 9
+        max_global_series_per_user: 4500000
+        max_fetched_series_per_query: 100000
+        out_of_order_time_window: 5m
+      cilium-demo-cluster3: # limits for tenant-1 that the whole cluster enforces
+        ingestion_tenant_shard_size: 9
+        max_global_series_per_user: 4500000
+        max_fetched_series_per_query: 100000
+        out_of_order_time_window: 5m
+
   metaMonitoring:
     dashboards:
       enabled: true

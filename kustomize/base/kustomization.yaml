@@ -5,17 +5,17 @@ resources:
 - shared-svc/02-deployment.yaml
 - shared-svc/03-shared-svc.yaml
 
-helmCharts:
-- name: metallb
-  repo: oci://registry-1.docker.io/bitnamicharts
-  version: 6.3.11
-  releaseName: metallb
-  namespace: metallb-system
-- name: nginx-ingress
-  repo: oci://ghcr.io/nginxinc/charts
-  version: 1.3.2
-  releaseName: nginx-ingress
-  namespace: ingress-nginx
-  valuesMerge: merge
-  valuesInline:
-    controller.hostNetwork: true
+# helmCharts:
+# - name: metallb
+#   repo: oci://registry-1.docker.io/bitnamicharts
+#   version: 6.3.11
+#   releaseName: metallb
+#   namespace: metallb-system
+# - name: nginx-ingress
+#   repo: oci://ghcr.io/nginxinc/charts
+#   version: 1.3.2
+#   releaseName: nginx-ingress
+#   namespace: ingress-nginx
+#   valuesMerge: merge
+#   valuesInline:
+#     controller.hostNetwork: true
