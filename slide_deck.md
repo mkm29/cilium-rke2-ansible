@@ -90,7 +90,48 @@
 
 ---
 
-## **Slide 10: Demo Overview (2 minutes)**
+## **Slide 10: Securing CoreDNS with CiliumNetworkPolicy (2 minutes)**
+
+- **Why Secure CoreDNS?**
+  - CoreDNS is critical for service discovery in Kubernetes clusters.
+  - Ensuring that only authorized pods can communicate with CoreDNS adds an extra layer of security to your cluster.
+
+- **CiliumNetworkPolicy Overview**:
+  - Cilium’s `CiliumNetworkPolicy` is used to enforce fine-grained network security policies.
+  - It allows you to define both L3/L4 (IP, port) and L7 (protocol) policies using eBPF, giving precise control over which pods can access specific services.
+
+- **Securing CoreDNS Example**:
+  - Use `CiliumNetworkPolicy` to restrict access to the CoreDNS service.
+  - Example policy:
+    ```yaml
+    apiVersion: cilium.io/v2
+    kind: CiliumNetworkPolicy
+    metadata:
+      name: coredns-restriction
+    spec:
+      endpointSelector:
+        matchLabels:
+          k8s-app: kube-dns
+      ingress:
+      - fromEndpoints:
+        - matchLabels:
+            app: allowed-app
+        toPorts:
+        - ports:
+          - port: "53"
+            protocol: UDP
+          - port: "53"
+            protocol: TCP
+    ```
+
+- **Key Benefits**:
+  - Prevent unauthorized pods from querying DNS.
+  - Limit the exposure of CoreDNS to only trusted applications, improving the security posture of your cluster.
+  - Easy to implement and manage with Cilium’s eBPF-powered policies.
+
+---
+
+## **Slide 11: Demo Overview (2 minutes)**
 - **Demo Preview**:
   - Deploy Cilium Cluster Mesh across two clusters.
   - Demonstrate global services, shared ingress, and service failover.
