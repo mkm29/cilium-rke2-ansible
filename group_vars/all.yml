@@ -14,3 +14,5 @@ libvirt_vm_path: /var/lib/libvirt/images
 
 # Name of the VM to create
 k8s_vm_disk_size: "20G"
+
+ca_common_name: smigula-ca

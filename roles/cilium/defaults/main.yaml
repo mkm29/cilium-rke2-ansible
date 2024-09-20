@@ -1,2 +1,8 @@
+cilium_helm_version: 1.16.1
 cilium_clustermesh_apiserver_service_type: NodePort
 cilium_apiserver_port: 32379
+cilium_enable_clustermesh: false
+cilium_ipam_mode: kubernetes
+cilium_enable_mtls: false
+cilium_encryption_type: wireguard
+cilium_hubble_ui_ingress_enabled: true

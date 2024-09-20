@@ -1,0 +1,51 @@
+---
+- name: Add Helm Repo
+  kubernetes.core.helm_repository:
+    name: cilium
+    repo_url: https://helm.cilium.io/
+
+# if kubeconfig variable is not defined, set it from file
+- name: Set kubeconfig from file
+  set_fact:
+    kubeconfig: "{{ lookup('file', '{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-kubeconfig') }}"
+  when: kubeconfig is not defined
+
+- name: Install Cilium Helm Chart
+  kubernetes.core.helm:
+    name: cilium
+    chart_ref: cilium/cilium
+    version: "1.16.1"
+    namespace: kube-system
+    values_files:
+      - "{{playbook_dir}}/files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml"
+    state: present
+    wait: yes
+    timeout: 600
+    kubeconfig: "{{ kubeconfig }}"
+    # retries: 10
+    # delay: 10
+    # force: yes
+    # recreate_pods: yes
+    # update_dependencies: yes
+    # validate: yes
+    # kubeconfig: "{{ kubeconfig }}"
+    # release_namespace: kube-system
+    # release_name: cilium
+    # release_state: present
+    # release_wait: yes
+    # release_timeout: 600
+    # release_retries: 10
+    # release_delay: 10
+    # release_force: yes
+    # release_recreate_pods: yes
+    # release_update_dependencies: yes
+    # release_validate: yes
+    # release_kubeconfig: "{{ kubeconfig }}"
+    # release_values:
+    #   cilium_clustermesh_apiserver_service_type: NodePort
+    #   cilium_apiserver_port: 32379
+    #   cilium_enable_clustermesh: false
+    #   cilium_ipam_mode: kubernetes
+    #   cilium_enable_mtls: false
+    #   cilium_encryption_type: wireguard
+    #   cilium_hubble_ui_ingress_enabled: true

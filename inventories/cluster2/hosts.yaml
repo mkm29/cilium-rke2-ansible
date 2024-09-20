@@ -1,0 +1,12 @@
+all:
+  children:
+    rke_server_nodes:
+      hosts:
+        cluster2-server:
+          ansible_host: 192.168.2.10
+    rke_agent_nodes:
+      hosts:
+        cluster2-worker1:
+          ansible_host: 192.168.2.11
+        cluster2-worker2:
+          ansible_host: 192.168.2.12

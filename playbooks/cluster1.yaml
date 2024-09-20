@@ -1,0 +1,101 @@
+---
+
+- name: Ensure tmp directory exists
+  hosts: localhost
+  tasks:
+    - name: Create the files/tmp/ca directory
+      file:
+        path: "{{ playbook_dir }}/../files/tmp/ca"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+
+- name: Check if CA certificate and key already exist
+  hosts: localhost
+  tasks:
+    - name: Check if CA certificate exists
+      stat:
+        path: "{{ playbook_dir }}/../files/tmp/ca/ca.crt"
+      register: ca_cert_exists
+
+    - name: Check if CA key exists
+      stat:
+        path: "{{ playbook_dir }}/../files/tmp/ca/ca.key"
+      register: ca_key_exists
+
+- name: Generate the CA certificate and key (only runs on localhost)
+  hosts: localhost
+  tasks:
+    - name: Generate CA private key
+      community.crypto.openssl_privatekey:
+        path: "{{ playbook_dir }}/../files/tmp/ca/ca.key"
+        size: 2048
+        state: present
+      delegate_to: localhost
+      when: not ca_key_exists.stat.exists
+      register: ca_key
+
+
+    - name: Generate CSR
+      community.crypto.openssl_csr_pipe:
+        privatekey_path: "{{ playbook_dir }}/../files/tmp/ca/ca.key"
+        common_name: smigula-ca
+        subject_alt_name:
+          - "DNS:*.kubula.internal"
+      register: csr
+      when: ca_key.changed == true
+  
+    - name: Generate CA certificate
+      community.crypto.x509_certificate:
+        path: "{{ playbook_dir }}/../files/tmp/ca/ca.crt"
+        privatekey_path: "{{ playbook_dir }}/../files/tmp/ca/ca.key"
+        csr_content: "{{ csr.csr }}"
+        state: present
+        provider: selfsigned
+        selfsigned_not_after: "+365d"  # Valid for 10 years
+        selfsigned_not_before: "-1d"
+      delegate_to: localhost
+      when: not ca_cert_exists.stat.exists
+
+
+- name: Initialize System
+  hosts: rke_server_nodes:rke_agent_nodes
+  roles:
+    - role: init
+
+- name: Configure Firewall
+  hosts: rke_server_nodes:rke_agent_nodes
+  roles:
+    - role: network
+      become: true
+
+- name: Configure Storage
+  hosts: rke_server_nodes:rke_agent_nodes
+  roles:
+    - role: storage
+
+- name: Set up RKE2 server nodes for cluster1
+  hosts: rke_server_nodes
+  roles:
+    - role: rke2
+      vars:
+        rke_role: "server"
+
+- name: Fetch RKE2 node token for cluster1
+  hosts: rke_server_nodes
+  tasks:
+    - name: Fetch RKE2 node token
+      command: cat /var/lib/rancher/rke2/server/node-token
+      register: rke2_node_token
+
+    - name: Save RKE2 node token locally for cluster1
+      copy:
+        content: "{{ rke2_node_token.stdout }}"
+        dest: "./rke2_node_token_cluster1"
+
+- hosts: rke_agent_nodes
+  roles:
+    - role: rke2
+      vars:
+        rke_role: "agent"
+        rke_node_token: "{{ lookup('file', './rke2_node_token_cluster1') }}"

@@ -1,0 +1,13 @@
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-spiffe-cross-cluster
+  namespace: monitoring
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: mimir
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            spiffe-id: 3c9400c8d178b5f1d8d54d453d9f83b6

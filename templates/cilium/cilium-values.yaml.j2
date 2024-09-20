@@ -1,7 +1,7 @@
 tls:
   ca:
-    cert: {{ cilium_ca }}
-    key: {{ cilium_ca_key }}
+    cert: {{ ca_cert }}
+    key: {{ ca_key }}
 bpf:
   masquerade: true
 cluster:
@@ -38,7 +38,8 @@ hubble:
     baseUrl: {{ cilium_hubble_ui_base_url }}
     ingress:
       enabled: {{ cilium_hubble_ui_ingress_enabled | to_yaml | lower }}
-      hosts: {{ cilium_hubble_ui_ingress_hosts }}
+      hosts: 
+      - {{ cilium_hubble_ui_ingress_hosts }}
 version: {{ cilium_cilium_version }}
 operator:
   replicas: 1
@@ -61,8 +62,9 @@ operator:
 #      server:
 #        extraDnsNames:
 #          - "*.{{ cilium_default_domain }}"
+{% if cilium_enable_clustermesh %}
 clustermesh:
-  useAPIServer: true
+  useAPIServer: {{ cilium_enable_clustermesh | to_yaml | lower }}
   enableEndpointSliceSynchronization: true
   apiserver:
     service:
@@ -74,18 +76,24 @@ clustermesh:
       enabled: {{ cilium_clustermesh_apiserver_metrics_enabled | to_yaml | lower }}
       serviceMonitor:
         enabled: {{ cilium_clustermesh_apiserver_service_monitor_enabled | to_yaml | lower }}
+{% endif %}
 kubeProxyReplacement: {{ cilium_kube_proxy_replacement }}
 ipam:
   mode: {{ cilium_ipam_mode }}
+{% if cilium_ipam_mode == "cluster-pool" %}
   operator:
     clusterPoolIPv4PodCIDRList: 
       - {{ rke2_cluster_cidr }}
+    clusterPoolIPv4PodCIDRMaskSize: 24
+{% endif %}
 socketLB:
+  enabled: true
   hostNamespaceOnly: true
 ipv4:
   enabled: true
 nodePort:
   enabled: true
+{% if cilium_enable_mtls %}
 authentication:
   mutual:
     spire:
@@ -95,11 +103,14 @@ authentication:
         server:
           dataStorage:
             enabled: false
+{% endif %}
+{% if cilium_enable_encryption %}
 encryption:
   enabled: true
-  type: wireguard
+  type: {{ cilium_encryption_type }}
   nodeEncryption: true
   strictMode:
     enabled: true
     allowRemoteNodeIdentities: true
     cidr: {{ rke2_cluster_cidr }}
+{% endif %}

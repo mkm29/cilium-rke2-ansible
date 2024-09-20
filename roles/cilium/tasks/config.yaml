@@ -67,16 +67,16 @@
   when: cilium_values_stat.stat.exists
   delegate_to: localhost
 
-- name: Copy Cilium Values to host
-  copy:
-    src: "files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml"
-    dest: "/home/{{ ansible_user }}/cilium-values.yaml"
-  delegate_to: localhost
+# - name: Copy Cilium Values to host
+#   copy:
+#     src: "files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml"
+#     dest: "/home/{{ ansible_user }}/cilium-values.yaml"
+  # delegate_to: localhost
 
-- name: Install Cilium
-  shell:
-    cmd: |
-      cilium install -f files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml
+# - name: Install Cilium
+#   shell:
+#     cmd: |
+#       cilium install -f /home/{{ ansible_user }}/{{ rke2_cluster_name }}-cilium-values.yaml
 
 # - name: Install Cilium Helm Chart
 #   community.kubernetes.helm:

@@ -1,0 +1,2 @@
+cilium_cluster_name: "cluster3"
+ipam_mode: "cluster-pool"

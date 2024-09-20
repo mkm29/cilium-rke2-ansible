@@ -1,0 +1,19 @@
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-spiffe-cross-cluster1
+  namespace: monitoring
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: mimir
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            spiffe-id: 7b7fa7e72be9419f62efc9f52e69be90
+        - matchLabels:
+            spiffe-id: e02d38a41ef739863bbfa3a7245b84d6
+# spiffe://cilium-demo-cluster3/ns/monitoring/sa/lgtm-distributed-loki-gateway
+
+
+# http://lgtm-distributed-mimir-nginx.monitoring.svc.cluster.local:80

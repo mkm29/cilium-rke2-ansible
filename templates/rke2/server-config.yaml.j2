@@ -4,7 +4,7 @@ selinux: false
 # add ips/hostname of hosts and loadbalancer
 tls-sans:
   - "{{ rke2_cluster_name }}.smigula.internal"
-  - "{{ network_static_ip }}"
+  - "{{ rke2_server_address }}"
 etcd-disable-snapshots: true
 etcd-expose-metrics: true
 disable:

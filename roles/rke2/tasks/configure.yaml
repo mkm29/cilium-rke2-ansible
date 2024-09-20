@@ -1,0 +1,170 @@
+---
+- name: Create the rke2 directory
+  become: true
+  ansible.builtin.file:
+    path: /etc/rancher/rke2
+    state: directory
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Create the rke2 server directory
+  become: true
+  ansible.builtin.file:
+    path: /var/lib/rancher/rke2/server
+    state: directory
+    owner: root
+    group: root
+    mode: "0644"
+  when: rke2_role == "server"
+
+- name: Create the rke2 agent directory
+  become: true
+  ansible.builtin.file:
+    path: /var/lib/rancher/rke2/agent
+    state: directory
+    owner: root
+    group: root
+    mode: "0644"
+  when: rke2_role == "agent"
+
+- name: Create the RKE2 images directory
+  become: true
+  ansible.builtin.file:
+    path: /var/lib/rancher/rke2/agent/images
+    state: directory
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Download RKE2 Images tar
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ rke2_images_url }}"
+    dest: /var/lib/rancher/rke2/agent/images
+  when: rke2_download_images
+
+- name: Create /etc/rancher/rke2 directory
+  when: rke2_role == "server"
+  become: true
+  ansible.builtin.file:
+    path: /etc/rancher/rke2/
+    state: directory
+    mode: '0755'
+
+- name: Set token as fact
+  set_fact:
+    rke2_token: "{{ lookup('file', '{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-token') }}"
+  when: rke2_role == "agent"
+
+- name: Create RKE2 config
+  become: true
+  template:
+    src: "templates/rke2/{{ rke2_role }}-config.yaml.j2"
+    dest: /etc/rancher/rke2/config.yaml
+    mode: '0644'
+
+- name: Check if RKE2 is already installed
+  ansible.builtin.command:
+    cmd: which rke2-server
+  register: rke2_installed
+  ignore_errors: true
+
+# debug rke2_role
+- name: Debug rke2_role
+  debug:
+    msg: "RKE2 Install Command: curl -sfL https://get.rke2.io | sudo INSTALL_RKE2_CHANNEL=latest INSTALL_RKE2_VERSION={{ rke2_version }} INSTAL_RKE2_TYPE={{ rke2_role }} sh -"
+  # only run when rke2 is not installed
+  when: rke2_installed.rc != 0
+
+# Install RKE2
+- name: Install RKE2
+  become: true
+  ansible.builtin.shell:
+    cmd: "curl -sfL https://get.rke2.io | sudo INSTALL_RKE2_CHANNEL=latest INSTALL_RKE2_VERSION={{ rke2_version }} INSTALL_RKE2_TYPE={{ rke2_role }} sh -"
+  when: rke2_installed.rc != 0
+
+
+# add rke-* to exclude in dnf
+- name: Add rke-* to exclude in dnf
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/dnf/dnf.conf
+    line: "exclude=rke-*"
+
+- name: Start RKE2
+  become: true
+  ansible.builtin.systemd:
+    name: rke2-{{ rke2_role }}
+    state: started
+    enabled: yes
+
+- name: Save token to tmp directory
+  become: true
+  ansible.builtin.shell:
+    cmd: "sudo cp /var/lib/rancher/rke2/server/node-token /home/{{ ansible_user }}/token"
+  when: rke2_role == "server"
+
+- name: Change owner of token
+  become: true
+  ansible.builtin.shell:
+    cmd: "sudo chown {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/token"
+  when: rke2_role == "server"
+
+# Download the token from /home/{{ ansible_user }}/token to local Ansible Control Machine
+- name: Download token from server
+  ansible.builtin.slurp:
+    src: "/home/{{ ansible_user }}/token"
+  register: token
+  when: rke2_role == "server"
+
+- name: Set token as fact
+  set_fact:
+    rke2_token: "{{ token['content'] | b64decode }}"
+  when: rke2_role == "server"
+
+# Save the token to the local Ansible Control Machine
+- name: Save token to tmp directory
+  delegate_to: localhost
+  ansible.builtin.copy:
+    content: "{{ rke2_token }}"
+    dest: "{{playbook_dir}}/files/tmp/{{ rke2_cluster_name }}-token"
+  when: rke2_role == "server"
+
+# output token
+- name: Output token
+  debug:
+    msg: "Token: {{ rke2_token }}"
+  when: rke2_role == "server"
+
+- name: Copy kubeconfig to user home
+  become: true
+  ansible.builtin.shell:
+    cmd: "sudo cp /etc/rancher/rke2/rke2.yaml /home/{{ ansible_user }}/.kube/config && sudo chown {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube/config"
+  when: rke2_role == "server"
+
+- name: Download kubeconfig from server
+  ansible.builtin.slurp:
+    src: "/home/{{ ansible_user }}/.kube/config"
+  register: kubeconfig
+  when: rke2_role == "server"
+
+- name: Update server address in kubeconfig
+  set_fact:
+    kubeconfig: "{{ kubeconfig['content'] | b64decode | regex_replace('server: https://127.0.0.1:6443', 'server: https://' + rke2_server_address + ':6443') }}"
+
+# Save the token to the local Ansible Control Machine
+- name: Save kubeconfig to tmp directory
+  delegate_to: localhost
+  ansible.builtin.copy:
+    content: "{{ kubeconfig }}"
+    dest: "{{playbook_dir}}/files/tmp/{{ rke2_cluster_name }}-kubeconfig"
+  when: rke2_role == "server"
+
+# Replace 127.0.0.1 with rke2_server_address
+- name: Replace server address in configuration file
+  delegate_to: localhost
+  replace:
+    path: "{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-kubeconfig"
+    regexp: '127\.0\.0\.1'
+    replace: "{{ rke2_server_address }}"
