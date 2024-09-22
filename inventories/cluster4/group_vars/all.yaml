@@ -1,16 +1,16 @@
 ca_common_name: "kubula-ca"
-rke2_server_address: 192.168.1.110
-cilium_k8s_hostname: controlplane1.cilium-demo-cluster2.kubula.interal
+rke2_server_address: 192.168.1.130
+cilium_k8s_hostname: controlplane1.cilium-demo-cluster4.kubula.interal
 # ansible_become: yes
-rke2_cluster_name: "cilium-demo-cluster2"
-cilium_cluster_name: "cilium-demo-cluster2"
+rke2_cluster_name: "cilium-demo-cluster4"
+cilium_cluster_name: "cilium-demo-cluster4"
 rke2_role: server
-rke2_cluster_cidr: 10.43.0.0/16
-rke2_service_cidr: 10.97.0.0/16
+rke2_cluster_cidr: 10.45.0.0/16
+rke2_service_cidr: 10.99.0.0/16
 cilium_master: true
 cilium_install: false
-cilium_default_domain: "cilium-demo-cluster2.kubula.internal"
-cilium_mesh_cluster_id: "02"
+cilium_default_domain: "cilium-demo-cluster4.kubula.internal"
+cilium_mesh_cluster_id: "04"
 cilium_clustermesh_apiserver_service_type: LoadBalancer
 rke2_egress_selector_mode: "disabled"
 rke2_protect_kernel_defaults: true
@@ -27,7 +27,7 @@ cilium_hubble_relay_service_monitor_enabled: true
 cilium_hubble_ui_enabled: false
 cilium_hubble_ui_base_url: "/"
 cilium_hubble_ui_ingress_enabled: false
-cilium_hubble_ui_ingress_hosts: "hubble.cilium-demo-cluster2.kubula.internal"
+cilium_hubble_ui_ingress_hosts: "cilium-ui.cilium-demo-cluster4.kubula.internal"
 cilium_cilium_version: 1.16.1
 cilium_operator_prometheus_enabled: true
 cilium_operator_prometheus_service_monitor_enabled: true
@@ -43,4 +43,4 @@ cilium_enable_mtls: true
 cilium_enable_encryption: false
 nfs_server: 192.168.1.6
 nfs_path: "/SMGSHR01"
-metallb_ip_range: "192.168.1.211-192.168.1.220"
+metallb_ip_range: "192.168.1.231-192.168.1.240"

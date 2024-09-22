@@ -10,6 +10,11 @@
     ca_cert: "{{ lookup('file', '{{ playbook_dir }}/../files/tmp/ca/ca.crt') | b64encode }}"
     ca_key: "{{ lookup('file', '{{ playbook_dir }}/../files/tmp/ca/ca.key') | b64encode }}"
 
+- name: Create MetalLB Manifests
+  delegate_to: localhost
+  template:
+    src: "{{ playbook_dir }}/templates/metallb/metallb-config.yaml.j2"
+    dest: "{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-metallb-config.yaml"
 
 - name: Install Helm Charts
   delegate_to: localhost
@@ -57,12 +62,17 @@
       release_namespace: metallb-system
       state: present
 
+  - name: Apply MetalLB manifests
+    kubernetes.core.k8s:
+      src: "{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-metallb-config.yaml"
+      state: present
+
   - name: Install NGINX Ingress Controller Helm chart
     kubernetes.core.helm:
-      name: nginx-ingress
-      chart_ref: nginx-ingress
-      chart_repo_url: oci://ghcr.io/nginxinc/charts
-      chart_version: 1.3.2
+      name: ingress-nginx
+      chart_ref: ingress-nginx
+      chart_repo_url: https://kubernetes.github.io/ingress-nginx
+      # chart_version: 1.3.2
       release_namespace: ingress-nginx
       create_namespace: true
       state: present

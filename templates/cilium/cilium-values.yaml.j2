@@ -7,10 +7,10 @@ bpf:
 cluster:
   name: {{ rke2_cluster_name }}
   id: {{ cilium_mesh_cluster_id }}
-#prometheus:
-#  enabled: {{ cilium_prometheus_enabled | to_yaml | lower }}
-#  serviceMonitor:
-#    enabled: {{ cilium_prometheus_service_monitor_enabled }}
+prometheus:
+  enabled: {{ cilium_prometheus_enabled | to_yaml | lower }}
+  serviceMonitor:
+    enabled: {{ cilium_prometheus_service_monitor_enabled }}
 dashboards:
   enabled: {{ cilium_dashboards_enabled | to_yaml | lower }}
 hubble:
@@ -43,25 +43,25 @@ hubble:
 version: {{ cilium_cilium_version }}
 operator:
   replicas: 1
-#  prometheus:
-#    enabled: {{ cilium_operator_prometheus_enabled | to_yaml | lower }}
-#    serviceMonitor:
-#      enabled: {{ cilium_operator_prometheus_service_monitor_enabled | to_yaml | lower }}
+  prometheus:
+    enabled: {{ cilium_operator_prometheus_enabled | to_yaml | lower }}
+    serviceMonitor:
+      enabled: {{ cilium_operator_prometheus_service_monitor_enabled | to_yaml | lower }}
   dashboards:
     enabled: {{ cilium_operator_dashboards_enabled | to_yaml | lower }}
-#envoy:
-#  prometheus:
-#    enabled: {{ cilium_envoy_prometheus_enabled | to_yaml | lower }}
-#    serviceMonitor:
-#      enabled: {{ cilium_envoy_prometheus_service_monitor_enabled | to_yaml | lower }}
-#    service:
-#      type: NodePort
-#      nodePort: {{ cilium_apiserver_port }}
-#    tls:
-#      authMode: cluster
-#      server:
-#        extraDnsNames:
-#          - "*.{{ cilium_default_domain }}"
+envoy:
+  prometheus:
+    enabled: {{ cilium_envoy_prometheus_enabled | to_yaml | lower }}
+    serviceMonitor:
+      enabled: {{ cilium_envoy_prometheus_service_monitor_enabled | to_yaml | lower }}
+    service:
+      type: NodePort
+      nodePort: {{ cilium_apiserver_port }}
+    tls:
+      authMode: cluster
+      server:
+        extraDnsNames:
+          - "*.{{ cilium_default_domain }}"
 {% if cilium_enable_clustermesh %}
 clustermesh:
   useAPIServer: {{ cilium_enable_clustermesh | to_yaml | lower }}

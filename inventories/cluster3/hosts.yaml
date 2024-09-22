@@ -1,12 +1,12 @@
-all:
-  children:
-    rke_server_nodes:
-      hosts:
-        cluster3-server:
-          ansible_host: 192.168.3.10
-    rke_agent_nodes:
-      hosts:
-        cluster3-worker1:
-          ansible_host: 192.168.3.131
-        cluster3-worker2:
-          ansible_host: 192.168.3.132
+servers:
+  hosts:
+    server1:
+      ansible_host: 192.168.1.120
+    
+agents:
+  hosts:    
+    worker1:
+      ansible_host: 192.168.1.121
+    # worker2:
+    #   ansible_host: 192.168.1.122
+

@@ -17,13 +17,16 @@ This repository contains Ansible playbooks and related configuration files to au
 ### Repository Structure
 
 **Playbooks**
-    - `main.yml`: The primary Ansible playbook that orchestrates the deployment process across all roles and tasks.
     - `01-cluster1.yaml`: Configuration specific to the first Kubernetes cluster.
     - `02-cluster2.yaml`: Configuration specific to the second Kubernetes cluster.
+    - `03-cluster2.yaml`: Configuration specific to the third Kubernetes cluster.
+    - `04-cluster2.yaml`: Configuration specific to the fourth Kubernetes cluster.
 
 **Inventories**
-    - `inventory/cluster1.yaml`: Inventory file containing details of the first Kubernetes cluster.
-    - `inventory/cluster2.yaml`: Inventory file containing details of the second Kubernetes cluster.
+    - `inventories/cluster1/`: Inventory files containing details of the first Kubernetes cluster.
+    - `inventories/cluster2/`: Inventory files containing details of the second Kubernetes cluster.
+    - `inventories/cluster3/`: Inventory files containing details of the third Kubernetes cluster.
+    - `inventories/cluster4/`: Inventory files containing details of the fourth Kubernetes cluster.
 
 **Configuration Files**
     - `ansible.cfg`: Configuration settings for Ansible execution.
@@ -33,7 +36,8 @@ This repository contains Ansible playbooks and related configuration files to au
     - `templates/rke2/server-config.yaml.j2:` Jinja2 template for RKE2 server configuration.
     - `templates/rke2/agent-config.yaml.j2`: Jinja2 template for RKE2 agent configuration.
     - `templates/cilium/cilium-values.yaml.j2`: Jinja2 template for Cilium Helm values.
-    - `templates/cilium/rke2-cilium-helm-config.yaml`.j2: Jinja2 template for configuring Cilium Helm on RKE2.
+    - `templates/cilium/rke2-cilium-helm-config.yaml.j2`: Jinja2 template for configuring Cilium Helm on RKE2.
+    - `templates/metallb/metalb-config.yaml.j2`: Jinja2 template for configuring `IPAddressPool` and `L2Advertisement` for MetalLB
 
 **Roles**
     - `roles/network`: Tasks and variables related to networking setup.
@@ -44,10 +48,11 @@ This repository contains Ansible playbooks and related configuration files to au
     - `roles/kernel`: Kernel configuration tasks to support RKE2 and Cilium.
 
 **Group Variables**
+    - `inventories/<HOST>/group_vars/all.yaml`: Variables to apply to all hosts in the `<HOST>` group
     - `group_vars/all.yml`: Global variables that apply to all hosts in the inventory.
 
 **Files**
-    - `files/tmp/`: Temporary files and artifacts generated during the setup process, such as tokens and kubeconfig files.
+    - `files/tmp/`: Temporary files and artifacts generated during the setup process, such as CA/key, tokens and kubeconfig files.
 
 ### Usage
 
@@ -63,18 +68,28 @@ Ensure that the following prerequisites are met before running the playbooks:
 
 1. Clone the Repository:
 
-```bash
-git clone github.com/gaianetes/kubula.git
-cd infrastructure/packer/ansible
-```
+    ```bash
+    git clone https://github.com/mkm29/cilium-rke2-ansible
+    cd cilium-rke2-ansible
+    ```
 
-2. Update Inventory Files: Modify the `inventory/cluster1.yaml` and `inventory/cluster2.yaml` files with the appropriate details of your Kubernetes clusters.
-3. Run the Playbook:
+2. Update Inventory Files
+   1. For each cluster you would like to configure, modify the `inventories/<HOST>/hosts.yaml` files with the appropriate details of your Kubernetes clusters (such as IP addresses)
+   2. Update the `inventories/<HOST>/group_vars/all.yaml` file to customize what options you wish to pass to the roles
+3. Install Ansible Galaxy Collections
 
-```bash
-ansible-playbook 01-cluster1.yaml -i inventory/cluster1.yaml
-ansible-playbook 02-cluster2.yaml -i inventory/cluster2.yaml
-```
+    ```bash
+    ansible-galaxy install -r requirements.yml --force
+    ```
+
+4. Run the Playbooks:
+
+    ```bash
+    ansible-playbook -i inventory/cluster1/hosts.yaml 01-cluster1.yaml
+    ansible-playbook -i inventory/cluster4/hosts.yaml 02-cluster2.yaml
+    ansible-playbook -i inventory/cluster4/hosts.yaml 03-cluster3.yaml
+    ansible-playbook -i inventory/cluster4/hosts.yaml 04-cluster4.yaml
+    ```
 
 4. **Monitor and Verify**: Monitor the output of the Ansible playbook for any errors. Upon successful completion, verify the setup by accessing the Kubernetes clusters and checking the status of RKE2 and Cilium.
 
@@ -84,7 +99,7 @@ You can customize the deployment by modifying the variables in the `group_vars/a
 
 #### Cilium Cluster Mesh Configuration
 
-To enable Cluster Mesh between multiple Kubernetes clusters, ensure that the appropriate values are set in the `cilium-values.yaml.j2` template. Here we use the `cilium` binary to install and configure Cilium Cluster Mesh, but you could also go the Helm method. 
+To enable Cluster Mesh between multiple Kubernetes clusters, ensure that the appropriate values are set in the [cilium-values.yaml.j2](./templates/cilium/cilium-values.yaml.j2) template. Here we use the `cilium` binary to install and configure Cilium Cluster Mesh, but you could also go the Helm method. 
 
 ## License
 
