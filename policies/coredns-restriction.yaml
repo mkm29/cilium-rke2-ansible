@@ -1,0 +1,44 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: coredns-restriction
+  namespace: kube-system
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s-app: kube-dns
+  ingress:
+  - fromEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: kube-system
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: metallb-system
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: ingress-nginx
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: cilium-spire
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: monitoring
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: kube-node-lease
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: kube-public
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: storage
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: allow-dns-access
+    toPorts:
+    - ports:
+      - port: "53"
+        protocol: UDP
+      - port: "53"
+        protocol: TCP
+
+
+# Will resolve
+# exec into web pod in the kube-system namespace
+# curl http://web.allow-dns-access.svc.cluster.local:80
+
+# Will not resolve
+# exec into web pod in default namespace
+# curl http://web.allow-dns-access.svc.cluster.local:80

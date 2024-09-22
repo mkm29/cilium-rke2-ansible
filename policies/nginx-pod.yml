@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web2
+  namespace: allow-dns-access
+  labels:
+    app: nginx
+spec:
+  containers:
+  - image: nginx
+    imagePullPolicy: Always
+    name: web
+    ports:
+    - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web2
+  namespace: allow-dns-access
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx

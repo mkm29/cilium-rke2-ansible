@@ -1,0 +1,12 @@
+servers:
+  hosts:
+    server1:
+      ansible_host: 192.168.1.110
+    
+agents:
+  hosts:    
+    worker1:
+      ansible_host: 192.168.1.111
+    # worker2:
+    #   ansible_host: 192.168.1.112
+

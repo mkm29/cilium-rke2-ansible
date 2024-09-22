@@ -1,0 +1,91 @@
+---
+# Task to create Cilium Helm values file using the Jinja2 template
+- name: Create Cilium Helm values file from template
+  delegate_to: localhost
+  template:
+    src: "{{ playbook_dir }}/templates/cilium/cilium-values.yaml.j2"
+    dest: "{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml"
+  vars:
+    # certs must be base64 encoded
+    ca_cert: "{{ lookup('file', '{{ playbook_dir }}/../files/tmp/ca/ca.crt') | b64encode }}"
+    ca_key: "{{ lookup('file', '{{ playbook_dir }}/../files/tmp/ca/ca.key') | b64encode }}"
+
+- name: Create MetalLB Manifests
+  delegate_to: localhost
+  template:
+    src: "{{ playbook_dir }}/templates/metallb/metallb-config.yaml.j2"
+    dest: "{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-metallb-config.yaml"
+
+- name: Install Helm Charts
+  delegate_to: localhost
+  vars:
+    KUBECONFIG: "{{ playbook_dir }}/files/tmp/{{ rke2_rke2_cluster_name }}-kubeconfig"
+  block:
+  - name: Install Prometheus Operator CRDs
+    kubernetes.core.helm:
+      name: prometheus-operator-crds
+      chart_ref: prometheus-operator-crds
+      chart_repo_url: https://prometheus-community.github.io/helm-charts
+      chart_version: 14.0.0
+      release_namespace: monitoring
+      # skip_crds: true
+      # values:
+      #   prometheusOperator.createCustomResource: false  # Skip CRD creation
+      create_namespace: true
+      state: present
+
+  # for some reason Cilium must be installed via the cilium binary
+  - name: Install Cilium
+    shell:
+      cmd: cilium install -f {{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml --wait
+
+  # Task to install the Cilium Helm chart using the generated values file
+  # - name: Install Cilium Helm chart
+  #   kubernetes.core.helm:
+  #     name: cilium
+  #     chart_ref: cilium
+  #     chart_repo_url: https://helm.cilium.io
+  #     chart_version: 1.16.1
+  #     release_namespace: kube-system
+  #     values_files: 
+  #     - "{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml"
+  #     state: present
+  #     wait: true
+
+  - name: Install MetalLB Helm chart
+    kubernetes.core.helm:
+      name: metallb
+      chart_ref: metallb
+      chart_repo_url: https://metallb.github.io/metallb
+      chart_version: 0.14.8
+      create_namespace: true
+      release_namespace: metallb-system
+      state: present
+
+  - name: Apply MetalLB manifests
+    kubernetes.core.k8s:
+      src: "{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-metallb-config.yaml"
+      state: present
+
+  - name: Install NGINX Ingress Controller Helm chart
+    kubernetes.core.helm:
+      name: ingress-nginx
+      chart_ref: ingress-nginx
+      chart_repo_url: https://kubernetes.github.io/ingress-nginx
+      # chart_version: 1.3.2
+      release_namespace: ingress-nginx
+      create_namespace: true
+      state: present
+
+  - name: Install NFS Subdir External Provisioner Helm chart
+    kubernetes.core.helm:
+      name: nfs-subdir-external-provisioner
+      chart_ref: nfs-subdir-external-provisioner
+      chart_repo_url: https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
+      chart_version: 2.3.0
+      release_namespace: nfs-subdir-external-provisioner
+      values:
+        nfs.server: "{{ nfs_server }}"
+        nfs.path: "{{ nfs_path }}"
+      create_namespace: true
+      state: present

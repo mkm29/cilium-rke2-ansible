@@ -43,7 +43,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: rebel-base
+            name: rebel-base-headless
             port:
               number: 80
 ---

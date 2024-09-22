@@ -1,0 +1,2 @@
+init_install_kubectl: false
+init_install_k9s: false

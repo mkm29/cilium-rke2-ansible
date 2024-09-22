@@ -1,5 +1,5 @@
 resources:
 - ../base/
 - ingress.yaml
-- metallb-values.yaml
+# - metallb-values.yaml
 - global-svc.yaml

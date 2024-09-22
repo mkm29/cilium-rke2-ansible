@@ -1,0 +1,63 @@
+- hosts: rke_server_nodes
+  roles:
+    - role: rke
+      vars:
+        rke_role: "server"
+
+- name: Fetch RKE2 node token for cluster2
+  hosts: rke_server_nodes
+  tasks:
+    - name: Fetch RKE2 node token
+      command: cat /var/lib/rancher/rke2/server/node-token
+      register: rke2_node_token
+
+    - name: Save RKE2 node token locally for cluster2
+      copy:
+        content: "{{ rke2_node_token.stdout }}"
+        dest: "./rke2_node_token_cluster2"
+
+    - name: Create Cilium Helm values file for cluster2
+      template:
+        src: templates/cilium-values.yaml.j2
+        dest: "./cilium-values-cluster2.yaml"
+      vars:
+        cilium_cluster_name: "{{ cilium_cluster_name }}"
+        cilium_ipam_mode: "{{ ipam_mode }}"
+
+    - name: Install Cilium Helm chart for cluster2
+      kubernetes.core.helm:
+        name: cilium
+        chart_ref: cilium/cilium
+        release_namespace: kube-system
+        values_file: "./cilium-values-cluster2.yaml"
+        state: present
+
+    - name: Install MetalLB Helm chart for cluster2
+      kubernetes.core.helm:
+        name: metallb
+        chart_ref: metallb/metallb
+        release_namespace: metallb-system
+        state: present
+
+    - name: Install Prometheus Operator CRDs for cluster2
+      kubernetes.core.helm:
+        name: prometheus-operator-crds
+        chart_ref: prometheus-community/kube-prometheus-stack
+        release_namespace: monitoring
+        values:
+          prometheusOperator.createCustomResource: false
+        state: present
+
+    - name: Install NGINX Ingress Controller Helm chart for cluster2
+      kubernetes.core.helm:
+        name: nginx-ingress
+        chart_ref: ingress-nginx/ingress-nginx
+        release_namespace: ingress-nginx
+        state: present
+
+- hosts: rke_agent_nodes
+  roles:
+    - role: rke
+      vars:
+        rke_role: "agent"
+        rke_node_token: "{{ lookup('file', './rke2_node_token_cluster2') }}"

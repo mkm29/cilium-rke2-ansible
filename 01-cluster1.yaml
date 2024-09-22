@@ -1,39 +1,101 @@
 ---
 
-# - name: Provision Controlplane VM
-#   hosts: k8s-cluster
-#   gather_facts: no
-#   roles:
-#     - role: kvm
+- name: Ensure tmp directory exists
+  hosts: localhost
+  tasks:
+    - name: Create the files/tmp/ca directory
+      file:
+        path: "{{ playbook_dir }}/../files/tmp/ca"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
 
-# - name: Configure Control Plane
-#   hosts: cp1
-#   gather_facts: yes
-#   roles:
-#     - role: init
-#     - role: network
-#       become: true
-#     - role: storage
-#     - role: cilium
-#       when: rke2_role == "server"
-#     - role: rke2
+- name: Check if CA certificate and key already exist
+  hosts: localhost
+  tasks:
+    - name: Check if CA certificate exists
+      stat:
+        path: "{{ playbook_dir }}/../files/tmp/ca/ca.crt"
+      register: ca_cert_exists
 
-# - name: Configure Worker 1
-#   hosts: w1
-#   gather_facts: yes
-#   roles:
-#     - role: init
-#     - role: network
-#       become: true
-#     - role: storage
-#     - role: rke2
+    - name: Check if CA key exists
+      stat:
+        path: "{{ playbook_dir }}/../files/tmp/ca/ca.key"
+      register: ca_key_exists
 
-- name: Configure Worker 2
-  hosts: w2
-  gather_facts: yes
+- name: Generate the CA certificate and key (only runs on localhost)
+  hosts: localhost
+  tasks:
+    - name: Generate CA private key
+      community.crypto.openssl_privatekey:
+        path: "{{ playbook_dir }}/../files/tmp/ca/ca.key"
+        size: 2048
+        state: present
+      delegate_to: localhost
+      when: not ca_key_exists.stat.exists
+      register: ca_key
+
+    - name: Generate CSR
+      community.crypto.openssl_csr_pipe:
+        privatekey_path: "{{ playbook_dir }}/../files/tmp/ca/ca.key"
+        common_name: "{{ ca_common_name }}"
+        subject_alt_name:
+          - "DNS:*.kubula.internal"
+      register: csr
+      when: ca_key_exists.stat.exists == true or ca_key.changed == true 
+  
+    - name: Generate CA certificate
+      community.crypto.x509_certificate:
+        path: "{{ playbook_dir }}/../files/tmp/ca/ca.crt"
+        privatekey_path: "{{ playbook_dir }}/../files/tmp/ca/ca.key"
+        csr_content: "{{ csr.csr }}"
+        state: present
+        provider: selfsigned
+        selfsigned_not_after: "+365d"  # Valid for 10 years
+        selfsigned_not_before: "-1d"
+      delegate_to: localhost
+      when: not ca_cert_exists.stat.exists
+
+
+- name: Initialize System
+  hosts: servers:agents
   roles:
     - role: init
+
+- name: Configure Firewall
+  hosts: servers:agents
+  roles:
     - role: network
       become: true
+
+- name: Configure Storage
+  hosts: servers:agents
+  roles:
     - role: storage
-    # - role: rke2
+
+- name: Set up RKE2 server nodes for cluster1
+  hosts: servers
+  roles:
+    - role: rke2
+      vars:
+        rke_role: "server"
+
+- name: Fetch RKE2 node token for cluster1
+  hosts: servers
+  tasks:
+    - name: Fetch RKE2 node token
+      command: cat /var/lib/rancher/rke2/server/node-token
+      register: rke2_node_token
+
+    - name: Save RKE2 node token locally for cluster1
+      copy:
+        content: "{{ rke2_node_token.stdout }}"
+        dest: "./rke2_node_token_cluster1"
+
+- name: Install RKE2 agents
+  hosts: agents
+  roles:
+    - role: rke2
+      vars:
+        rke_role: "agent"
+        rke_node_token: "{{ lookup('file', '{{ playbook_dir }}/files/tmp/{{ rke_cluser_name }}-token') }}"
