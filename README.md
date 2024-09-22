@@ -85,10 +85,10 @@ Ensure that the following prerequisites are met before running the playbooks:
 4. Run the Playbooks:
 
     ```bash
-    ansible-playbook -i inventory/cluster1/hosts.yaml 01-cluster1.yaml
-    ansible-playbook -i inventory/cluster4/hosts.yaml 02-cluster2.yaml
-    ansible-playbook -i inventory/cluster4/hosts.yaml 03-cluster3.yaml
-    ansible-playbook -i inventory/cluster4/hosts.yaml 04-cluster4.yaml
+    ansible-playbook -i inventory/cluster1/hosts.yaml playbooks/01-cluster1.yaml
+    ansible-playbook -i inventory/cluster4/hosts.yaml playbooks/02-cluster2.yaml
+    ansible-playbook -i inventory/cluster4/hosts.yaml playbooks/03-cluster3.yaml
+    ansible-playbook -i inventory/cluster4/hosts.yaml playbooks/04-cluster4.yaml
     ```
 
 4. **Monitor and Verify**: Monitor the output of the Ansible playbook for any errors. Upon successful completion, verify the setup by accessing the Kubernetes clusters and checking the status of RKE2 and Cilium.
@@ -100,6 +100,10 @@ You can customize the deployment by modifying the variables in the `group_vars/a
 #### Cilium Cluster Mesh Configuration
 
 To enable Cluster Mesh between multiple Kubernetes clusters, ensure that the appropriate values are set in the [cilium-values.yaml.j2](./templates/cilium/cilium-values.yaml.j2) template. Here we use the `cilium` binary to install and configure Cilium Cluster Mesh, but you could also go the Helm method. 
+
+## Kustomize
+
+In order to fully test Cilium Cluster Mesh, I have created a few Kustomize resources. _TODO_
 
 ## License
 

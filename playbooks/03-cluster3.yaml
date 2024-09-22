@@ -2,17 +2,17 @@
 
 - name: Check if directories exist and exit if not
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
   tasks:
 
     - name: Check if the 'files/tmp' directory exists
       stat:
-        path: "{{ playbook_dir }}/files/tmp"
+        path: "{{ playbook_dir }}/../files/tmp"
       register: tmp_dir_check
 
     - name: Check if the 'files/tmp/ca' directory exists
       stat:
-        path: "{{ playbook_dir }}/files/tmp/ca"
+        path: "{{ playbook_dir }}/../files/tmp/ca"
       register: ca_dir_check
 
     - name: Fail if 'files/tmp' directory does not exist
@@ -34,12 +34,12 @@
   tasks:
     - name: Check if CA certificate exists
       stat:
-        path: "{{ playbook_dir }}/files/tmp/ca/ca.crt"
+        path: "{{ playbook_dir }}/../files/tmp/ca/ca.crt"
       register: ca_cert_exists
 
     - name: Check if CA key exists
       stat:
-        path: "{{ playbook_dir }}/files/tmp/ca/ca.key"
+        path: "{{ playbook_dir }}/../files/tmp/ca/ca.key"
       register: ca_key_exists
 
       # fail if either does not exist
@@ -64,24 +64,24 @@
   roles:
     - role: storage
 
-- name: Set up RKE2 server nodes for cluster1
+- name: Set up RKE2 server nodes for cluster3
   hosts: servers
   roles:
     - role: rke2
       vars:
         rke_role: "server"
 
-- name: Fetch RKE2 node token for cluster1
+- name: Fetch RKE2 node token for cluster3
   hosts: servers
   tasks:
     - name: Fetch RKE2 node token
       command: cat /var/lib/rancher/rke2/server/node-token
       register: rke2_node_token
 
-    - name: Save RKE2 node token locally for cluster1
+    - name: Save RKE2 node token locally for cluster3
       copy:
         content: "{{ rke2_node_token.stdout }}"
-        dest: "{{ playbook_dir }}/files/tmp/{{ rke_cluser_name }}-token}}"
+        dest: "{{ playbook_dir }}/../files/tmp/{{ rke_cluser_name }}-token}}"
 
 - name: Install RKE2 agents
   hosts: agents
@@ -89,4 +89,4 @@
     - role: rke2
       vars:
         rke_role: "agent"
-        rke_node_token: "{{ lookup('file', '{{ playbook_dir }}/files/tmp/{{ rke_cluser_name }}-token') }}"
+        rke_node_token: "{{ lookup('file', '{{ playbook_dir }}/../files/tmp/{{ rke_cluser_name }}-token') }}"
