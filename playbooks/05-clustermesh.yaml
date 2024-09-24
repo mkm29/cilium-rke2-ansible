@@ -1,0 +1,75 @@
+---
+
+- name: Loop over clusters and modify kubeconfig for each
+  hosts: localhost
+  gather_facts: false
+  vars:
+    clusters:
+      - rke2_cluster_name: cilium-demo-cluster1
+        rke2_server_address: 192.168.1.100
+      - rke2_cluster_name: cilium-demo-cluster2
+        rke2_server_address: 192.168.1.110
+      - rke2_cluster_name: cilium-demo-cluster3
+        rke2_server_address: 192.168.1.120
+      - rke2_cluster_name: cilium-demo-cluster4
+        rke2_server_address: 192.168.1.130
+    files_path: "{{ playbook_dir | dirname }}/files/tmp"
+
+  tasks:
+    - name: Loop over clusters and call modify_kubeconfig playbook
+      include_tasks: modify_kubeconfig.yaml
+      vars:
+        rke2_cluster_name: "{{ item.rke2_cluster_name }}"
+        rke2_server_address: "{{ item.rke2_server_address }}"
+        files_path: "{{ playbook_dir | dirname }}/files/tmp"
+      loop: "{{ clusters }}"
+      loop_control:
+        label: "{{ item.rke2_cluster_name }}"
+
+    - name: Remove merged-kubeconfig
+      file:
+        path: "{{ playbook_dir | dirname }}/files/tmp/merged-kubeconfig"
+        state: absent
+
+    - name: Merge kubeconfig files
+      loop: "{{ clusters }}"
+      loop_control:
+        label: "{{ item.rke2_cluster_name }}"
+      include_tasks: merge_kubeconfigs.yaml
+
+- name: Join Clusters
+  hosts: localhost
+  gather_facts: false
+  environment:
+    KUBECONFIG: "{{ playbook_dir | dirname }}/files/tmp/merged-kubeconfig"
+  vars:
+    clusters:
+      - rke2_cluster_name: cilium-demo-cluster1
+        rke2_server_address: 192.168.1.100
+      - rke2_cluster_name: cilium-demo-cluster2
+        rke2_server_address: 192.168.1.110
+      - rke2_cluster_name: cilium-demo-cluster3
+        rke2_server_address: 192.168.1.120
+      - rke2_cluster_name: cilium-demo-cluster4
+        rke2_server_address: 192.168.1.130
+  tasks:
+    - name: Show status for each cluster
+      shell:
+        cmd: cilium clustermesh status --context {{ item.rke2_cluster_name }}
+      register: cilium_clustermesh_status
+      loop: "{{ clusters }}"
+      loop_control:
+        label: "{{ item.rke2_cluster_name }}"
+      ignore_errors: yes
+
+    - name: Append status to file for each cluster
+      lineinfile:
+        path: "{{ playbook_dir | dirname }}/files/tmp/cilium-status.txt"
+        line: |
+          Cluster: {{ item.item.rke2_cluster_name }}
+          {{ item.stdout | trim if item.rc == 0 else item.stderr | trim }}
+        create: yes
+        insertafter: EOF
+      loop: "{{ cilium_clustermesh_status.results }}"
+      loop_control:
+        label: "{{ item.item.rke2_cluster_name }}"
