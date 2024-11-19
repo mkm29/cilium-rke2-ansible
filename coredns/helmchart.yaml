@@ -1,0 +1,18 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  annotations:
+    helm.cattle.io/chart-url: https://rke2-charts.rancher.io/assets/rke2-coredns/rke2-coredns-1.29.004.tgz
+    rke2.cattle.io/inject-cluster-config: "true"
+  name: rke2-coredns
+  namespace: kube-system
+spec:
+  bootstrap: true
+  set:
+    global.clusterCIDR: 10.44.0.0/16
+    global.clusterCIDRv4: 10.44.0.0/16
+    global.clusterDNS: 10.98.0.10
+    global.clusterDomain: cluster.local
+    global.rke2DataDir: /var/lib/rancher/rke2
+    global.serviceCIDR: 10.98.0.0/16
+    global.systemDefaultIngressClass: cilium

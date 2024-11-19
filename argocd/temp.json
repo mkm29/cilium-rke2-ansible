@@ -1,0 +1,58 @@
+{
+  "apiVersion": "v1",
+  "kind": "Namespace",
+  "metadata": {
+    "creationTimestamp": "2024-11-02T17:57:59Z",
+    "deletionTimestamp": "2024-11-02T18:27:11Z",
+    "labels": {
+      "istio.io/dataplane-mode": "ambient",
+      "kubernetes.io/metadata.name": "blue"
+    },
+    "name": "blue",
+    "resourceVersion": "9656403",
+    "uid": "cdf9dd4b-f285-48f6-984f-fcb252bd43ec"
+  },
+  "spec": {
+    "finalizers": []
+  },
+  "status": {
+    "conditions": [
+      {
+        "lastTransitionTime": "2024-11-02T18:27:16Z",
+        "message": "Discovery failed for some groups, 1 failing: unable to retrieve the complete list of server APIs: metrics.k8s.io/v1beta1: stale GroupVersion discovery: metrics.k8s.io/v1beta1",
+        "reason": "DiscoveryFailed",
+        "status": "True",
+        "type": "NamespaceDeletionDiscoveryFailure"
+      },
+      {
+        "lastTransitionTime": "2024-11-02T18:27:17Z",
+        "message": "All legacy kube types successfully parsed",
+        "reason": "ParsedGroupVersions",
+        "status": "False",
+        "type": "NamespaceDeletionGroupVersionParsingFailure"
+      },
+      {
+        "lastTransitionTime": "2024-11-02T18:27:17Z",
+        "message": "All content successfully deleted, may be waiting on finalization",
+        "reason": "ContentDeleted",
+        "status": "False",
+        "type": "NamespaceDeletionContentFailure"
+      },
+      {
+        "lastTransitionTime": "2024-11-02T18:27:17Z",
+        "message": "All content successfully removed",
+        "reason": "ContentRemoved",
+        "status": "False",
+        "type": "NamespaceContentRemaining"
+      },
+      {
+        "lastTransitionTime": "2024-11-02T18:27:17Z",
+        "message": "All content-preserving finalizers finished",
+        "reason": "ContentHasNoFinalizers",
+        "status": "False",
+        "type": "NamespaceFinalizersRemaining"
+      }
+    ],
+    "phase": "Terminating"
+  }
+}

@@ -53,14 +53,30 @@
       - rke2_cluster_name: cilium-demo-cluster4
         rke2_server_address: 192.168.1.130
   tasks:
+    - name: Connect each cluster to the others
+      shell: |
+        cilium clustermesh connect --context {{ item.0.rke2_cluster_name }} --destination-context {{ item.1.rke2_cluster_name }}
+      loop: "{{ query('nested', clusters, clusters) }}"
+      loop_control:
+        label: "{{ item.0.rke2_cluster_name }} -> {{ item.1.rke2_cluster_name }}"
+      when: item.0.rke2_cluster_name != item.1.rke2_cluster_name
+      retries: 3
+      delay: 15
+      register: clustermesh_connect
+      ignore_errors: true
+
+    - name: Print result of the connection attempts
+      debug:
+        var: clustermesh_connect
+
     - name: Show status for each cluster
       shell:
-        cmd: cilium clustermesh status --context {{ item.rke2_cluster_name }}
+        cmd: cilium clustermesh status --context {{ item.rke2_cluster_name }} --wait
       register: cilium_clustermesh_status
       loop: "{{ clusters }}"
       loop_control:
         label: "{{ item.rke2_cluster_name }}"
-      ignore_errors: yes
+      ignore_errors: true
 
     - name: Append status to file for each cluster
       lineinfile:

@@ -1,9 +1,17 @@
 ---
-global:
-  dnsService: rke2-coredns-rke2-coredns
 grafana:
   # -- Deploy Grafana if enabled. See [upstream readme](https://github.com/grafana/helm-charts/tree/main/charts/grafana#configuration) for full values reference.
   enabled: true
+  adminPassword: SuperSecret1
+  serviceMonitor:
+    enabled: true 
+    namespace: "monitoring"
+  resources:
+    limits:
+      memory: 2Gi
+    requests:
+      cpu: '1'
+      memory: 2Gi
 
   # -- Grafana data sources config. Connects to all three by default
   datasources:
@@ -38,18 +46,90 @@ grafana:
               datasourceUid: prom
             serviceMap:
               datasourceUid: prom
+      dashboardProviders:
+        dashboardproviders.yaml:
+          apiVersion: 1
+          providers:
+          - name: 'default'
+            orgId: 1
+            folder: ''
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/default
+      dashboards:
+        default:
+          prometheusViewsNodes:
+            gnetId: 15759
+            revision: 28
+            datasource: Prometheus
 
 loki:
   # -- Deploy Loki if enabled. See [upstream readme](https://github.com/grafana/helm-charts/tree/main/charts/loki-distributed#values) for full values reference.
   enabled: true
   global:
-    dnsService: rke2-coredns-rke2-coredns
+    dnsService: "rke2-coredns-rke2-coredns"
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+  storageConfig:
+    aws:
+      s3: "s3://mimir:supersecret@minio.minio.svc.cluster.local:9000/mimir-logs"
+      s3forcepathstyle: true
+      insecure: true
 
 # -- Mimir chart values. Resources are set to a minimum by default.
 mimir:
   # -- Deploy Mimir if enabled. See [upstream values.yaml](https://github.com/grafana/mimir/blob/main/operations/helm/charts/mimir-distributed/values.yaml) for full values reference.
   enabled: true
+  global:
+    dnsService: "rke2-coredns-rke2-coredns"
+  runtimeConfig:
+    overrides:
+      anonymous:
+        ingestion_tenant_shard_size: 9
+        max_global_series_per_user: 0
+        max_fetched_series_per_query: 0  
+        compactor_blocks_retention_period: 1d
+  structuredConfig:
+    common:
+      storage:
+        backend: s3
+        s3:
+          endpoint: "minio.minio.svc.cluster.local:9000"
+          region: "us-east-1"
+          # bucket_name: "mimir-tsdb"
+          access_key_id: "mimir" # This is a secret injected via an environment variable
+          secret_access_key: "supersecret" # This is a secret injected via an environment variable
+          http:
+            insecure_skip_verify: true
+      ruler_storage:
+        backend: s3
+        s3:
+          bucket_name: "mimir-ruler"
+      alertmanager_storage:
+        backend: s3
+        s3:
+          bucket_name: "mimir-alertmanager"
+      blocks_storage:
+        backend: s3
+        s3:
+          bucket_name: "mimir-tsdb"
+    # limits:
+    #   max_global_series_per_user: 20000000
+    #   ingestion_rate: 200000
+    #   ingestion_burst_size: 1000000
+    #   out_of_order_time_window: 5m
+  metaMonitoring:
+    dashboards:
+      enabled: true
+    serviceMonitor:
+      enabled: true
+      # clusterLabel: "cilium-cluster3"
+      namespace: monitoring
   alertmanager:
+    enabled: false
     resources:
       requests:
         cpu: 20m
@@ -57,6 +137,8 @@ mimir:
     resources:
       requests:
         cpu: 20m
+    persistentVolume:
+      enabled: false
   distributor:
     resources:
       requests:
@@ -68,6 +150,8 @@ mimir:
     resources:
       requests:
         cpu: 20m
+    persistentVolume:
+      enabled: false
   overrides_exporter:
     resources:
       requests:
@@ -87,6 +171,7 @@ mimir:
       requests:
         cpu: 20m
   ruler:
+    enabled: false
     resources:
       requests:
         cpu: 20m
@@ -96,64 +181,24 @@ mimir:
     resources:
       requests:
         cpu: 20m
+    persistentVolume:
+      enabled: false
   minio:
+    enabled: false
     resources:
       requests:
         cpu: 20m
-    persistence:
-      storageClass: nfs-client
-      size: 500Gi
-
   rollout_operator:
     resources:
       requests:
         cpu: 20m
-  structuredConfig:
-    limits:
-      max_global_series_per_user: 20000000
-      ingestion_rate: 400000
-      ingestion_burst_size: 2000000
-      out_of_order_time_window: 15m
-
-  runtimeConfig:
-    ingester_limits: # limits that each ingester replica enforces
-      max_ingestion_rate: 60000
-      max_series: 4500000
-      max_tenants: 1000
-      max_inflight_push_requests: 60000
-  #   distributor_limits: # limits that each distributor replica enforces
-  #     max_ingestion_rate: 20000
-  #     max_inflight_push_requests: 30000
-  #     max_inflight_push_requests_bytes: 50000000
-    overrides:
-      cilium-demo-cluster1: # limits for tenant-1 that the whole cluster enforces
-        ingestion_tenant_shard_size: 9
-        max_global_series_per_user: 4500000
-        max_fetched_series_per_query: 100000
-        out_of_order_time_window: 5m
-      cilium-demo-cluster2: # limits for tenant-1 that the whole cluster enforces
-        ingestion_tenant_shard_size: 9
-        max_global_series_per_user: 4500000
-        max_fetched_series_per_query: 100000
-        out_of_order_time_window: 5m
-      cilium-demo-cluster3: # limits for tenant-1 that the whole cluster enforces
-        ingestion_tenant_shard_size: 9
-        max_global_series_per_user: 4500000
-        max_fetched_series_per_query: 100000
-        out_of_order_time_window: 5m
-
-  metaMonitoring:
-    dashboards:
-      enabled: true
-    serviceMonitor:
-      enabled: true
-      clusterLabel: "cilium-demo-cluster3"
-      namespace: monitoring
 
 
 tempo:
   # -- Deploy Tempo if enabled.  See [upstream readme](https://github.com/grafana/helm-charts/blob/main/charts/tempo-distributed/README.md#values) for full values reference.
-  enabled: true
+  enabled: false
+  global:
+    dnsService: "rke2-coredns-rke2-coredns"
   ingester:
     replicas: 1
 

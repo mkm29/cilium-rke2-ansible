@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-users
+  namespace: minio
+type: Opaque
+stringData:
+  mimir: |
+    username=mimir
+    password=supersecret
+    disabled=false
+    policies=readwrite,consoleAdmin,diagnostics
+    setPolicies=false
+  mitch: |
+    username=mitch
+    password=supersecret
+    disabled=false
+    policies=readwrite,consoleAdmin,diagnostics
+    setPolicies=false

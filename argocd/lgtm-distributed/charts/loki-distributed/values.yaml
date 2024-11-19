@@ -7,7 +7,7 @@ global:
   # -- configures cluster domain ("cluster.local" by default)
   clusterDomain: "cluster.local"
   # -- configures DNS service name
-  dnsService: "rke2-coredns-rke2-coredns"
+  dnsService: "kube-dns"
   # -- configures DNS service namespace
   dnsNamespace: "kube-system"
 
@@ -504,7 +504,7 @@ ingester:
     # @notationType -- list
     claims:
       - name: data
-        size: 50Gi
+        size: 10Gi
         #   -- Storage class to be used.
         #   If defined, storageClassName: <storageClass>.
         #   If set to "-", storageClassName: "", which disables dynamic provisioning.

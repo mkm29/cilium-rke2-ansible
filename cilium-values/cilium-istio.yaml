@@ -1,0 +1,10 @@
+kubectl create ns red
+kubectl label namespace red istio-injection=enabled
+kubectl -n red apply -f <(curl -s https://raw.githubusercontent.com/cilium/cilium/HEAD/examples/kubernetes-istio/httpbin.yaml)
+kubectl -n red apply -f <(curl -s https://raw.githubusercontent.com/cilium/cilium/HEAD/examples/kubernetes-istio/netshoot.yaml)
+kubectl create ns blue
+kubectl label namespace blue istio-injection=enabled
+kubectl -n blue apply -f <(curl -s https://raw.githubusercontent.com/cilium/cilium/HEAD/examples/kubernetes-istio/httpbin.yaml)
+kubectl -n blue apply -f <(curl -s https://raw.githubusercontent.com/cilium/cilium/HEAD/examples/kubernetes-istio/netshoot.yaml)
+kubectl create ns green
+kubectl -n green apply -f https://raw.githubusercontent.com/cilium/cilium/HEAD/examples/kubernetes-istio/netshoot.yaml

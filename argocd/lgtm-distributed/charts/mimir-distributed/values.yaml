@@ -45,7 +45,7 @@ image:
 
 global:
   # -- Definitions to set up nginx resolver
-  dnsService: rke2-coredns-rke2-coredns
+  dnsService: kube-dns
   dnsNamespace: kube-system
   clusterDomain: cluster.local.
 
@@ -422,52 +422,40 @@ mimir:
   #
   # Example:
   #
-  # structuredConfig:
-  #   common:
-  #     storage:
-  #       backend: s3
-  #       s3:
-  #         bucket_name: "${BUCKET_NAME}"
-  #         endpoint: "${BUCKET_HOST}:${BUCKET_PORT}"
-  #         access_key_id: "${AWS_ACCESS_KEY_ID}" # This is a secret injected via an environment variable
-  #         secret_access_key: "${AWS_SECRET_ACCESS_KEY}" # This is a secret injected via an environment variable
-  #         http:
-  #           insecure_skip_verify: true
-  structuredConfig: {}
+  structuredConfig:
+    common:
+      storage:
+        backend: s3
+        s3:
+          bucket_name: "mimir-tsdb"
+          endpoint: "minio.minio.svc.cluster.local:9000"
+          access_key_id: "mimir" # This is a secret injected via an environment variable
+          secret_access_key: "supersecret" # This is a secret injected via an environment variable
+          http:
+            insecure_skip_verify: true
+  # structuredConfig: {}
 
 # -- runtimeConfig provides a reloadable runtime configuration. Changing the runtimeConfig doesn't require a restart of all components.
 # For more infromation see https://grafana.com/docs/mimir/latest/configure/about-runtime-configuration/
 #
 # Example:
 #
-runtimeConfig:
-  ingester_limits: # limits that each ingester replica enforces
-    max_ingestion_rate: 60000
-    max_series: 4500000
-    max_tenants: 1000
-    max_inflight_push_requests: 60000
+# runtimeConfig:
+#   ingester_limits: # limits that each ingester replica enforces
+#     max_ingestion_rate: 20000
+#     max_series: 1500000
+#     max_tenants: 1000
+#     max_inflight_push_requests: 30000
 #   distributor_limits: # limits that each distributor replica enforces
 #     max_ingestion_rate: 20000
 #     max_inflight_push_requests: 30000
 #     max_inflight_push_requests_bytes: 50000000
-  overrides:
-    tenant-1: # limits for tenant-1 that the whole cluster enforces
-      ingestion_tenant_shard_size: 9
-      max_global_series_per_user: 4500000
-      max_fetched_series_per_query: 100000
-    tenant-2: # limits for tenant-1 that the whole cluster enforces
-      ingestion_tenant_shard_size: 9
-      max_global_series_per_user: 4500000
-      max_fetched_series_per_query: 100000
-    tenant-3: # limits for tenant-1 that the whole cluster enforces
-      ingestion_tenant_shard_size: 9
-      max_global_series_per_user: 4500000
-      max_fetched_series_per_query: 100000
-# runtimeConfig: {}
-  # max_global_series_per_user: 4500000
-  # ingestion_rate: 400000
-  # ingestion_burst_size: 2000000
-  # out_of_order_time_window: 15m
+#   overrides:
+#     tenant-1: # limits for tenant-1 that the whole cluster enforces
+#       ingestion_tenant_shard_size: 9
+#       max_global_series_per_user: 1500000
+#       max_fetched_series_per_query: 100000
+runtimeConfig: {}
 
 # RBAC configuration
 rbac:
@@ -623,7 +611,7 @@ alertmanager:
     #   set, choosing the default provisioner.
     #
     # A per-zone storageClass configuration in `alertmanager.zoneAwareReplication.zones[*].storageClass` takes precedence over this field.
-    storageClass: "nfs-client"
+    # storageClass: "-"
 
     # -- Enable StatefulSetAutoDeletePVC feature
     # https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#persistentvolumeclaim-retention
@@ -778,7 +766,7 @@ alertmanager:
 
 distributor:
   # Setting it to null will produce a deployment without replicas set, allowing you to use autoscaling with the deployment
-  replicas: 2
+  replicas: 1
 
   # -- [Experimental] Configure autoscaling via KEDA (https://keda.sh). This requires having
   # KEDA already installed in the Kubernetes cluster. The metrics for scaling are read
@@ -971,7 +959,7 @@ ingester:
     #
     # A per-zone storageClass configuration in `ingester.zoneAwareReplication.zones[*].storageClass` takes precedence over this field.
     #
-    storageClass: "nfs-client"
+    # storageClass: "-"
 
   readinessProbe:
     httpGet:
@@ -2350,23 +2338,30 @@ minio:
   mode: standalone
   rootUser: grafana-mimir
   buckets:
-    - name: mimir-tsdb
-      policy: none
-      purge: false
-    - name: mimir-ruler
-      policy: none
-      purge: false
-    - name: enterprise-metrics-tsdb
-      policy: none
-      purge: false
-    - name: enterprise-metrics-admin
-      policy: none
-      purge: false
-    - name: enterprise-metrics-ruler
-      policy: none
-      purge: false
+  - name: mimir-tsdb
+    policy: none
+    purge: false
+  - name: mimir-ruler
+    policy: none
+    purge: false
+  - name: enterprise-metrics-tsdb
+    policy: none
+    purge: false
+  - name: enterprise-metrics-admin
+    policy: none
+    purge: false
+  - name: enterprise-metrics-ruler
+    policy: none
+    purge: false
+  - name: loki-logs
+    policy: none
+    purge: false
+  - name: mimir-alertmanager
+    policy: none
+    purge: false
+  users: []
   persistence:
-    size: 50Gi
+    size: 5Gi
   resources:
     requests:
       cpu: 100m
