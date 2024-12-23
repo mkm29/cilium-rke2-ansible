@@ -64,23 +64,23 @@
 #   roles:
 #     - role: init
 
-- name: Configure Firewall
-  hosts: servers
-  roles:
-    - role: network
-      become: true
+# - name: Configure Firewall
+#   hosts: servers
+#   roles:
+#     - role: network
+#       become: true
 
 # - name: Configure Storage
 #   hosts: servers
 #   roles:
 #     - role: storage
 
-# - name: Set up RKE2 server nodes for cluster1
-#   hosts: servers
-#   roles:
-#     - role: rke2
-#       vars:
-#         rke_role: "server"
+- name: Set up RKE2 server nodes for cluster1
+  hosts: servers
+  roles:
+    - role: rke2
+      vars:
+        rke_role: "server"
 
 # - name: Fetch RKE2 node token for cluster1
 #   hosts: servers

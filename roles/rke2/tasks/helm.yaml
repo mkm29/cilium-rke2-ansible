@@ -1,44 +1,65 @@
 ---
 # Task to create Cilium Helm values file using the Jinja2 template
-- name: Create Cilium Helm values file from template
-  delegate_to: localhost
-  template:
-    src: "{{ playbook_dir }}/templates/cilium/cilium-values.yaml.j2"
-    dest: "{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml"
-  vars:
-    # certs must be base64 encoded
-    ca_cert: "{{ lookup('file', '{{ playbook_dir }}/../files/tmp/ca/ca.crt') | b64encode }}"
-    ca_key: "{{ lookup('file', '{{ playbook_dir }}/../files/tmp/ca/ca.key') | b64encode }}"
+# - name: Create Cilium Helm values file from template
+#   delegate_to: localhost
+#   template:
+#     src: "{{ playbook_dir }}/../templates/cilium/cilium-values.yaml.j2"
+#     dest: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml"
+#   vars:
+#     # certs must be base64 encoded
+#     ca_cert: "{{ lookup('file', '{{ playbook_dir }}/../files/tmp/ca/ca.crt') | b64encode }}"
+#     ca_key: "{{ lookup('file', '{{ playbook_dir }}/../files/tmp/ca/ca.key') | b64encode }}"
 
 - name: Create Cilium IPPool Manifest
   delegate_to: localhost
   template:
-    src: "{{ playbook_dir }}/templates/cilium/ippool.yaml.j2"
+    src: "{{ playbook_dir }}/../templates/cilium/ippool.yaml.j2"
     # dest: "{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-metallb-config.yaml"
-    dest: "{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-cilium-ippool.yaml"
+    dest: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-cilium-ippool.yaml"
+
+# print out the kubeconfig path
+- debug:
+    msg: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-kubeconfig"
 
 - name: Install Helm Charts
   delegate_to: localhost
   vars:
-    KUBECONFIG: "{{ playbook_dir }}/files/tmp/{{ rke2_rke2_cluster_name }}-kubeconfig"
+    KUBECONFIG: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-kubeconfig"
   block:
   - name: Install Prometheus Operator CRDs
     kubernetes.core.helm:
       name: prometheus-operator-crds
       chart_ref: prometheus-operator-crds
       chart_repo_url: https://prometheus-community.github.io/helm-charts
-      chart_version: 14.0.0
-      release_namespace: monitoring
+      chart_version: "{{ rke2_prometheus_operator_version }}"
+      release_namespace: kube-system
       # skip_crds: true
       # values:
       #   prometheusOperator.createCustomResource: false  # Skip CRD creation
       create_namespace: true
       state: present
+      kubeconfig: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-kubeconfig"
+      validate_certs: false
+  # - name: Install Cilium via Helm
+  #   kubernetes.core.helm:
+  #     name: cilium
+  #     chart_ref: cilium
+  #     chart_repo_url: https://helm.cilium.io
+  #     chart_version: "{{ cilium_cilium_version }}"
+  #     release_namespace: kube-system
+  #     create_namespace: false
+  #     state: present
+  #     kubeconfig: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-kubeconfig"
+  #     validate_certs: false
+
 
   # for some reason Cilium must be installed via the cilium binary
-  - name: Install Cilium
-    shell:
-      cmd: cilium install -f {{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml --wait
+  # - name: Install Cilium
+  #   delegate_to: localhost
+  #   vars:
+  #     KUBECONFIG: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-kubeconfig"
+  #   shell:
+  #     cmd: cilium install -f {{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml --wait
 
   # Task to install the Cilium Helm chart using the generated values file
   # - name: Install Cilium Helm chart
@@ -49,7 +70,7 @@
   #     chart_version: 1.16.1
   #     release_namespace: kube-system
   #     values_files: 
-  #     - "{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml"
+  #     - "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml"
   #     state: present
   #     wait: true
 
@@ -63,17 +84,18 @@
   #     release_namespace: metallb-system
   #     state: present
 
-  - name: Apply Cilium manifests
-    kubernetes.core.k8s:
-      src: "{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-cilium-ippool.yaml"
-      state: present
+  # - name: Apply Cilium manifests
+  #   kubernetes.core.k8s:
+  #     src: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-cilium-ippool.yaml"
+  #     state: present
 
 # Install the Kubernetes Gateway API CRDs
 # using kubectl: kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.0/standard-install.yaml
 - name: Install Kubernetes Gateway API CRDs
-  kubernetes.core.k8s:
-    src: "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.0/standard-install.yaml"
-    state: present
+  delegate_to: localhost
+  raw: >
+    curl -L https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.0/standard-install.yaml |
+    KUBECONFIG="{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-kubeconfig" kubectl apply -f -
 
   # - name: Install NGINX Ingress Controller Helm chart
   #   kubernetes.core.helm:

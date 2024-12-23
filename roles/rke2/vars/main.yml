@@ -1,0 +1,3 @@
+rke2_exclude_rke: false
+rke2_prometheus_operator_version: 17.0.2
+cilium_cilium_version: 1.16.5

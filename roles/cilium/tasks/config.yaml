@@ -45,27 +45,33 @@
     cilium_ca: "{{ (lookup('file', 'files/tmp/cilium-ca-certificate.pem') + '\n') | b64encode }}" 
     cilium_ca_key: "{{ (lookup('file', 'files/tmp/cilium-ca-certificate.key') + '\n') | b64encode }}"
 
-# Check if file exists: files/tmp/rke2-cilium-config.yaml
-- name: Check if Cilium values exists
-  ansible.builtin.stat:
-    path: "{{playbook_dir}}/templates/cilium/cilium-values.yaml.j2"
+- name: Create Cilium Helm values file from template
   delegate_to: localhost
-  register: cilium_values_stat
-
-# If file does not exist, exit
-- name: Fail if Cilium values does not exist
-  ansible.builtin.fail:
-    msg: "Cilium values does not exist. Please create the file at {{playbook_dir}}/templates/cilium/rke2-cilium-config.yaml.j2"
-  when: not cilium_values_stat.stat.exists
-
-- name: Create Cilium values
-  # become: true
   template:
-    src: "{{playbook_dir}}/templates/cilium/cilium-values.yaml.j2"
-    dest: "files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml"
-    mode: '0644'
-  when: cilium_values_stat.stat.exists
+    src: "{{ playbook_dir }}/../templates/cilium/cilium-values.yaml.j2"
+    dest: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml"
+  vars:
+    # certs must be base64 encoded
+    ca_cert: "{{ lookup('file', '{{ playbook_dir }}/../files/tmp/ca/ca.crt') | b64encode }}"
+    ca_key: "{{ lookup('file', '{{ playbook_dir }}/../files/tmp/ca/ca.key') | b64encode }}"
+
+- name: Install Helm Charts
   delegate_to: localhost
+  vars:
+    KUBECONFIG: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-kubeconfig"
+  block:
+  - name: Install Cilium via Helm
+    kubernetes.core.helm:
+      name: cilium
+      chart_ref: cilium
+      chart_repo_url: https://helm.cilium.io
+      chart_version: "{{ cilium_cilium_version }}"
+      release_namespace: kube-system
+      create_namespace: false
+      state: present
+      kubeconfig: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-kubeconfig"
+      validate_certs: false
+      release_values: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml"
 
 # - name: Copy Cilium Values to host
 #   copy:

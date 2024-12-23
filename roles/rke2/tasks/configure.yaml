@@ -54,19 +54,18 @@
 
 - name: Set token as fact
   set_fact:
-    rke2_token: "{{ lookup('file', '{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-token') }}"
+    rke2_token: "{{ lookup('file', '{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-token') }}"
   when: rke2_role == "agent"
 
 - name: Create RKE2 config
   become: true
   template:
-    src: "templates/rke2/{{ rke2_role }}-config.yaml.j2"
+    src: "{{playbook_dir}}/../templates/rke2/{{ rke2_role }}-config.yaml.j2"
     dest: /etc/rancher/rke2/config.yaml
     mode: '0644'
 
-- name: Check if RKE2 is already installed
-  ansible.builtin.command:
-    cmd: which rke2-server
+- name: Check if RKE2 service is installed
+  raw: test -f /usr/lib/systemd/system/rke2-server.service
   register: rke2_installed
   ignore_errors: true
 
@@ -84,13 +83,13 @@
     cmd: "curl -sfL https://get.rke2.io | sudo INSTALL_RKE2_CHANNEL=latest INSTALL_RKE2_VERSION={{ rke2_version }} INSTALL_RKE2_TYPE={{ rke2_role }} sh -"
   when: rke2_installed.rc != 0
 
-
 # add rke-* to exclude in dnf
 - name: Add rke-* to exclude in dnf
   become: true
   ansible.builtin.lineinfile:
     path: /etc/dnf/dnf.conf
     line: "exclude=rke-*"
+  when: rke2_exclude_rke
 
 - name: Start RKE2
   become: true
@@ -128,7 +127,7 @@
   delegate_to: localhost
   ansible.builtin.copy:
     content: "{{ rke2_token }}"
-    dest: "{{playbook_dir}}/files/tmp/{{ rke2_cluster_name }}-token"
+    dest: "{{playbook_dir}}/../files/tmp/{{ rke2_cluster_name }}-token"
   when: rke2_role == "server"
 
 # output token
@@ -149,6 +148,13 @@
   register: kubeconfig
   when: rke2_role == "server"
 
+- name: Set proper kubeconfig permissions
+  delegate_to: localhost
+  file:
+    path: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-kubeconfig"
+    mode: '0600'
+  become: false
+
 - name: Update server address in kubeconfig
   set_fact:
     kubeconfig: "{{ kubeconfig['content'] | b64decode | regex_replace('server: https://127.0.0.1:6443', 'server: https://' + rke2_server_address + ':6443') }}"
@@ -158,13 +164,13 @@
   delegate_to: localhost
   ansible.builtin.copy:
     content: "{{ kubeconfig }}"
-    dest: "{{playbook_dir}}/files/tmp/{{ rke2_cluster_name }}-kubeconfig"
+    dest: "{{playbook_dir}}/../files/tmp/{{ rke2_cluster_name }}-kubeconfig"
   when: rke2_role == "server"
 
 # Replace 127.0.0.1 with rke2_server_address
 - name: Replace server address in configuration file
   delegate_to: localhost
   replace:
-    path: "{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-kubeconfig"
+    path: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-kubeconfig"
     regexp: '127\.0\.0\.1'
     replace: "{{ rke2_server_address }}"

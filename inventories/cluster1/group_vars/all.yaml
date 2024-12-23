@@ -48,3 +48,4 @@ cilium_enable_encryption: false
 rke2_cilium_ip_pool_start: "192.168.100.200"
 rke2_cilium_ip_pool_stop: "192.168.100.209"
 init_install_k9s: true
+rke2_version: v1.31.3+rke2r1
