@@ -10,6 +10,16 @@
 #     ca_cert: "{{ lookup('file', '{{ playbook_dir }}/../files/tmp/ca/ca.crt') | b64encode }}"
 #     ca_key: "{{ lookup('file', '{{ playbook_dir }}/../files/tmp/ca/ca.key') | b64encode }}"
 
+- name: Add Helm repos
+  delegate_to: localhost
+  vars:
+    KUBECONFIG: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-kubeconfig"
+  block:
+  - name: Add Prometheus Operator Helm Repo
+    raw: helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update
+  - name: Add Cilium Helm Repo
+    raw: helm repo add cilium https://helm.cilium.io --force-update
+
 - name: Create Cilium IPPool Manifest
   delegate_to: localhost
   template:
@@ -44,13 +54,25 @@
   #   kubernetes.core.helm:
   #     name: cilium
   #     chart_ref: cilium
-  #     chart_repo_url: https://helm.cilium.io
+  #     chart_repo_url: https://helm.cilium.io/
   #     chart_version: "{{ cilium_cilium_version }}"
   #     release_namespace: kube-system
   #     create_namespace: false
   #     state: present
   #     kubeconfig: "{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-kubeconfig"
   #     validate_certs: false
+  #     values_files:
+  #       - "{{playbook_dir}}/../files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml"
+  #     wait: yes
+  #     timeout: "10m0s"
+
+- name: Install Cilium via Helm CLI
+  delegate_to: localhost
+  raw: >
+    KUBECONFIG="{{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-kubeconfig"
+    helm install cilium cilium/cilium
+    --namespace kube-system 
+    -f {{ playbook_dir }}/../files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml
 
 
   # for some reason Cilium must be installed via the cilium binary

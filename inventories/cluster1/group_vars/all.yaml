@@ -12,7 +12,7 @@ cilium_master: true
 cilium_install: false
 cilium_default_domain: "cilium-demo-cluster1.smigula.internal"
 cilium_mesh_cluster_id: "01"
-cilium_clustermesh_apiserver_service_type: LoadBalancer
+cilium_clustermesh_apiserver_service_type: NodePort
 rke2_egress_selector_mode: "disabled"
 rke2_protect_kernel_defaults: true
 cilium_ipam_mode: "cluster-pool"
