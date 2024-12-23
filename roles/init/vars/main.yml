@@ -1,6 +1,6 @@
 ---
 # vars file for init
-init_user_name: "rke2"
+init_user_name: "smigula"
 init_user_password: "$6$w2Xiyvj66j623aDP$OKE6Ds7dEEdXYIzXlPeuyclaMul7.ym3oRIIX3Nr2EtA/tSTzdjsgzCpxbpZjd6umAq.vODWo6DAy07KyAI9E0"
 init_packages:
 - bash-completion

@@ -4,6 +4,6 @@ metadata:
   name: main-pool
 spec:
   blocks:
-  - start: 192.168.100.210
-    stop: 192.168.100.219
+  - start: {{ rke2_cilium_ip_pool_start }}
+    stop: {{ rke2_cilium_ip_pool_stop }}
   disabled: false

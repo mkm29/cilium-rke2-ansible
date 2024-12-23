@@ -1,6 +1,7 @@
-ca_common_name: "kubula-ca"
-rke2_server_address: 192.168.1.100
-cilium_k8s_hostname: controlplane1.cilium-demo-cluster1.kubula.interal
+init_user_name: "smigula"
+# ca_common_name: "smigula-ca"
+rke2_server_address: 192.168.100.2
+cilium_k8s_hostname: controlplane1.cilium-demo-cluster1smigula.internal
 # ansible_become: yes
 rke2_cluster_name: "cilium-demo-cluster1"
 cilium_cluster_name: "cilium-demo-cluster1"
@@ -9,7 +10,7 @@ rke2_cluster_cidr: 10.42.0.0/16
 rke2_service_cidr: 10.96.0.0/16
 cilium_master: true
 cilium_install: false
-cilium_default_domain: "cilium-demo-cluster1.kubula.internal"
+cilium_default_domain: "cilium-demo-cluster1.smigula.internal"
 cilium_mesh_cluster_id: "01"
 cilium_clustermesh_apiserver_service_type: LoadBalancer
 rke2_egress_selector_mode: "disabled"
@@ -27,7 +28,7 @@ cilium_hubble_relay_service_monitor_enabled: true
 cilium_hubble_ui_enabled: false
 cilium_hubble_ui_base_url: "/"
 cilium_hubble_ui_ingress_enabled: false
-cilium_hubble_ui_ingress_hosts: "hubble.cilium-demo-cluster1.kubula.internal"
+cilium_hubble_ui_ingress_hosts: "hubble.cilium-demo-cluster1.smigula.internal"
 cilium_cilium_version: 1.16.1
 cilium_operator_prometheus_enabled: true
 cilium_operator_prometheus_service_monitor_enabled: true
@@ -41,6 +42,9 @@ cilium_clustermesh_apiserver_service_monitor_enabled: true
 cilium_kube_proxy_replacement: true
 cilium_enable_mtls: true
 cilium_enable_encryption: false
-nfs_server: 192.168.1.6
-nfs_path: "/SMGSHR01"
-metallb_ip_range: "192.168.1.200-192.168.1.210"
+# nfs_server: 192.168.1.6
+# nfs_path: "/SMGSHR01"
+# metallb_ip_range: "192.168.1.200-192.168.1.210"
+rke2_cilium_ip_pool_start: "192.168.100.200"
+rke2_cilium_ip_pool_stop: "192.168.100.209"
+init_install_k9s: true

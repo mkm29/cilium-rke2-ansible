@@ -10,8 +10,8 @@ l2announcements:
   enabled: true
 bpf:
   masquerade: true
-# egressGateway:
-#   enabled: true
+egressGateway:
+  enabled: true
 
 prometheus:
   enabled: true
@@ -89,6 +89,7 @@ ipam:
 # l7Proxy: false
 # if disabling the l7 proxy, the following also needs to be disabled
 
+l7Proxy: true
 l7:
   backend: envoy
   algorithm: least_request
@@ -102,7 +103,7 @@ gatewayAPI:
 clustermesh:
   useAPIServer: true
   enableEndpointSliceSynchronization: true
-  enableMCSAPISupport: true
+  enableMCSAPISupport: false
   apiserver:
     kvstoremesh:
       enabled: true
@@ -118,8 +119,20 @@ clustermesh:
         extraDnsNames:
         - cilium-demo-cluster1.kubula.internal
         - cilium-demo-cluster2.kubula.internal
-        - cilium-demo-cluster3.kubula.internal
+        - cilium-demo-cluster4.kubula.internal
 
 encryption:
   enabled: true
-  type: ipsec
+  type: wireguard
+  # pod on node A -> pod on node B still encrypted with encryption=true and nodeEncryption=false
+  # nodeEncryption could perhaps be better phrased as hostNetworkEncryption. It is only determining the encryption for traffic in the host network namespace for a node (eg hostNetwork pods or applications running directly on the node).
+  nodeEncryption: false
+  strictMode:
+    enabled: false
+    cidr: 10.44.0.0/16
+
+authentication:
+  enabled: true
+  mutual:
+    spire:
+      enabled: true

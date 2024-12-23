@@ -4,6 +4,6 @@ metadata:
   name: main-pool
 spec:
   blocks:
-  - start: 192.168.1.135
-    stop: 192.168.1.140
+  - start: 192.168.100.220
+    stop: 192.168.100.229
   disabled: false

@@ -61,11 +61,11 @@
     line: "GSSAPIAuthentication no"
     state: present
 
-- name: Update DNF
+- name: Update packages using raw command
   become: true
-  ansible.builtin.dnf:
-    name: "*"
-    state: latest
+  raw: dnf clean all && dnf remove -y cups-client cups-libs && dnf -y install cups-client cups-libs && dnf -y update
+  args:
+    executable: /bin/bash
 
 - name: Update CA bundle (Rocky)
   become: true
@@ -78,58 +78,38 @@
 
 - name: Install epel repo (Rocky)
   become: true
-  ansible.builtin.dnf:
-    name: "epel-release"
-    state: latest
-  when: ansible_distribution == "Rocky"
-
-# enable epel repo
-- name: Enable epel repo (Rocky)
-  become: true
-  ansible.builtin.shell:
-    cmd: "dnf config-manager --set-enabled epel"
-  when: ansible_distribution == "Rocky"
-
-- name: Upgrade all packages (Rocky)
-  become: true
-  ansible.builtin.dnf:
-    name: "*"
-    state: latest
+  raw: dnf install -y epel-release && dnf config-manager --enable epel
   when: ansible_distribution == "Rocky"
 
 - name: Install packages (Rocky)
   become: true
-  ansible.builtin.dnf:
-    name: "{{ init_packages }}"
-    state: latest
+  raw: dnf install -y {{ init_packages | join(' ') }}
   when: ansible_distribution == "Rocky"
 
 - name: Autoremove DNF packages
   become: true
-  ansible.builtin.dnf:
-    autoremove: true
+  raw: dnf -y autoremove
 
 - name: Clean DNF cache
   become: true
-  ansible.builtin.shell:
-    cmd: "dnf clean all"
+  raw: dnf clean all
 
-# - name: Create rke2 user
-#   ansible.builtin.user:
-#     name: "{{ init_user_name }}"
-#     uid: 1001
-#     shell: /bin/bash
-#     groups: wheel
-#     append: true
-#     create_home: true
-#     password: "{{ init_user_password }}"
-#   when: init_user_name is defined
+# # - name: Create rke2 user
+# #   ansible.builtin.user:
+# #     name: "{{ init_user_name }}"
+# #     uid: 1001
+# #     shell: /bin/bash
+# #     groups: wheel
+# #     append: true
+# #     create_home: true
+# #     password: "{{ init_user_password }}"
+# #   when: init_user_name is defined
 
 
-# - name: Disable swap
-#   ansible.builtin.command: "swapoff -a"
-#   become: true
-#   notify: Reboot if needed
+- name: Disable swap
+  ansible.builtin.command: "swapoff -a"
+  become: true
+  notify: Reboot if needed
 
 - name: Remove swap line from /etc/fstab
   become: true
@@ -144,11 +124,17 @@
     state: absent
     fstype: swap
 
-# - name: Set SELinux to permissive
-#   ansible.posix.selinux:
-#     policy: targeted
-#     state: permissive
-#   become: true
+- name: Install SELinux Python bindings
+  become: true
+  raw: dnf install -y python3-libselinux
+
+- name: Set SELinux to permissive mode
+  become: true
+  raw: setenforce 0
+
+- name: Make SELinux permissive mode persistent
+  become: true
+  raw: sed -i 's/^SELINUX=.*/SELINUX=permissive/' /etc/selinux/config
 
 - name: setenforce 0
   become: true
@@ -186,11 +172,8 @@
 
 # Install kubectl
 - name: Install kubectl
-  ansible.builtin.dnf:
-    name: "kubectl"
-    state: latest
-    disable_excludes: kubernetes
   become: true
+  raw: dnf install -y kubectl --disableexcludes=kubernetes
   when: init_install_kubectl and kubectl_installed.rc != 0
 
 # Add alias for kubectl
@@ -216,14 +199,13 @@
       alias k=kubectl
     mode: '0644'
 
-# Install k9s
-- name: Determine if k9s is installed
+# check if k9s is installed
+- name: Check if k9s is installed
   ansible.builtin.command:
     cmd: "which k9s"
   register: k9s_installed
   failed_when: false
   changed_when: false
-  when: init_install_k9s
 
 - name: Download k9s RPM
   ansible.builtin.get_url:
@@ -231,12 +213,10 @@
     dest: "/home/{{ init_user_name }}/k9s_linux_amd64.rpm"
   when: init_install_k9s and k9s_installed.rc != 0
 
+# Install k9s
 - name: Install k9s
-  ansible.builtin.dnf:
-    name: "/home/{{ init_user_name }}/k9s_linux_amd64.rpm"
-    state: present
-    disable_gpg_check: true
   become: true
+  raw: dnf install -y /home/{{ init_user_name }}/k9s_linux_amd64.rpm --nogpgcheck
   when: init_install_k9s and k9s_installed.rc != 0
 
 # Clean up k9s RPM

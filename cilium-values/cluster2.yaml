@@ -130,3 +130,9 @@ encryption:
   strictMode:
     enabled: true
     cidr: 10.43.0.0/16
+
+authentication:
+  enabled: true
+  mutual:
+    spire:
+      enabled: true

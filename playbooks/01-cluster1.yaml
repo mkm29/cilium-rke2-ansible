@@ -2,6 +2,7 @@
 
 - name: Ensure tmp directory exists
   hosts: localhost
+  # gather_facts: false
   tasks:
     - name: Create the files/tmp/ca directory
       file:
@@ -12,6 +13,7 @@
 
 - name: Check if CA certificate and key already exist
   hosts: localhost
+  # gather_facts: false
   tasks:
     - name: Check if CA certificate exists
       stat:
@@ -38,9 +40,9 @@
     - name: Generate CSR
       community.crypto.openssl_csr_pipe:
         privatekey_path: "{{ playbook_dir }}/../files/tmp/ca/ca.key"
-        common_name: "{{ ca_common_name }}"
+        common_name: "smigula"
         subject_alt_name:
-          - "DNS:*.kubula.internal"
+          - "DNS:*.smigula.internal"
       register: csr
       when: ca_key_exists.stat.exists == true or ca_key.changed == true 
   
@@ -56,46 +58,46 @@
       delegate_to: localhost
       when: not ca_cert_exists.stat.exists
 
-
+# :agents
 - name: Initialize System
-  hosts: servers:agents
+  hosts: servers
   roles:
     - role: init
 
-- name: Configure Firewall
-  hosts: servers:agents
-  roles:
-    - role: network
-      become: true
+# - name: Configure Firewall
+#   hosts: servers
+#   roles:
+#     - role: network
+#       become: true
 
-- name: Configure Storage
-  hosts: servers:agents
-  roles:
-    - role: storage
+# - name: Configure Storage
+#   hosts: servers
+#   roles:
+#     - role: storage
 
-- name: Set up RKE2 server nodes for cluster1
-  hosts: servers
-  roles:
-    - role: rke2
-      vars:
-        rke_role: "server"
+# - name: Set up RKE2 server nodes for cluster1
+#   hosts: servers
+#   roles:
+#     - role: rke2
+#       vars:
+#         rke_role: "server"
 
-- name: Fetch RKE2 node token for cluster1
-  hosts: servers
-  tasks:
-    - name: Fetch RKE2 node token
-      command: cat /var/lib/rancher/rke2/server/node-token
-      register: rke2_node_token
+# - name: Fetch RKE2 node token for cluster1
+#   hosts: servers
+#   tasks:
+#     - name: Fetch RKE2 node token
+#       command: cat /var/lib/rancher/rke2/server/node-token
+#       register: rke2_node_token
 
-    - name: Save RKE2 node token locally for cluster1
-      copy:
-        content: "{{ rke2_node_token.stdout }}"
-        dest: "./rke2_node_token_cluster1"
+#     - name: Save RKE2 node token locally for cluster1
+#       copy:
+#         content: "{{ rke2_node_token.stdout }}"
+#         dest: "./rke2_node_token_cluster1"
 
-- name: Install RKE2 agents
-  hosts: agents
-  roles:
-    - role: rke2
-      vars:
-        rke_role: "agent"
-        rke_node_token: "{{ lookup('file', '{{ playbook_dir }}/files/tmp/{{ rke_cluser_name }}-token') }}"
+# - name: Install RKE2 agents
+#   hosts: agents
+#   roles:
+#     - role: rke2
+#       vars:
+#         rke_role: "agent"
+#         rke_node_token: "{{ lookup('file', '{{ playbook_dir }}/files/tmp/{{ rke_cluser_name }}-token') }}"
