@@ -59,16 +59,16 @@
       when: not ca_cert_exists.stat.exists
 
 # :agents
-- name: Initialize System
-  hosts: servers
-  roles:
-    - role: init
-
-# - name: Configure Firewall
+# - name: Initialize System
 #   hosts: servers
 #   roles:
-#     - role: network
-#       become: true
+#     - role: init
+
+- name: Configure Firewall
+  hosts: servers
+  roles:
+    - role: network
+      become: true
 
 # - name: Configure Storage
 #   hosts: servers

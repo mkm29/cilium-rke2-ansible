@@ -25,7 +25,7 @@
     sysctl_set: true
     reload: false
 
-- name: Enalbe bridge netfilter for IPv4
+- name: Enable bridge netfilter for IPv4
   ansible.posix.sysctl:
     name: net.bridge.bridge-nf-call-iptables
     value: 1
@@ -41,54 +41,43 @@
     sysctl_set: true
     reload: true
 
-- name: Allow TCP ports
-  firewalld:
-    port: "{{ item }}/tcp"
-    state: enabled
-    permanent: true
+- name: Install firewall Python bindings
+  become: true
+  raw: dnf install -y python3-firewall
+
+- name: Add TCP ports to firewall
+  become: true
+  raw: firewall-cmd --permanent --add-port={{ item }}/tcp
   with_items: "{{ network_allowed_tcp_ports }}"
 
-- name: Allow UDP ports
-  firewalld:
-    port: "{{ item }}/udp"
-    state: enabled
-    permanent: true
+- name: Add UDP ports to firewall
+  become: true
+  raw: firewall-cmd --permanent --add-port={{ item }}/udp
   with_items: "{{ network_allowed_udp_ports }}"
 
-- name: Reload firewalld
-  ansible.builtin.service:
-    name: firewalld
-    state: restarted
-
 - name: Enable masquerade
-  firewalld:
-    masquerade: true
-    state: enabled
-    permanent: true
+  become: true
+  raw: firewall-cmd --permanent --add-masquerade
 
-- name: Enable HTTP
+- name: Enable HTTP service
+  become: true
+  raw: firewall-cmd --permanent --add-service=http
 
-  firewalld:
-    service: http
-    permanent: true
-    state: enabled
-- name: Enable HTTPS
-  firewalld:
-    service: https
-    permanent: true
-    state: enabled
+- name: Enable HTTPS service
+  become: true
+  raw: firewall-cmd --permanent --add-service=https
 
 - name: Remove ICMP Block for echo-request
-  firewalld:
-    icmp_block: "echo-request"
-    state: disabled
-    permanent: true
+  become: true
+  raw: firewall-cmd --permanent --remove-icmp-block=echo-request
 
 - name: Remove ICMP Block for echo-reply
-  firewalld:
-    icmp_block: "echo-reply"
-    state: disabled
-    permanent: true
+  become: true
+  raw: firewall-cmd --permanent --remove-icmp-block=echo-reply
+
+- name: Reload firewall
+  become: true
+  raw: firewall-cmd --reload
 
 - name: Create /etc/NetworkManager/conf.d/rke2-canal.conf
   ansible.builtin.copy:
