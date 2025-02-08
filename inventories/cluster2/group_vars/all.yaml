@@ -28,7 +28,7 @@ cilium_hubble_ui_enabled: false
 cilium_hubble_ui_base_url: "/"
 cilium_hubble_ui_ingress_enabled: false
 cilium_hubble_ui_ingress_hosts: "hubble.cilium-demo-cluster2.kubula.internal"
-cilium_cilium_version: 1.16.1
+cilium_cilium_version: 1.17.0
 cilium_operator_prometheus_enabled: true
 cilium_operator_prometheus_service_monitor_enabled: true
 cilium_operator_dashboards_enabled: true
@@ -44,3 +44,6 @@ cilium_enable_encryption: false
 nfs_server: 192.168.1.6
 nfs_path: "/SMGSHR01"
 metallb_ip_range: "192.168.1.211-192.168.1.220"
+cilium_gateway_api_enabled: true
+cilium_gateway_api_host_network_enabled: true
+cilium_drop_event_emitter_enabled: true

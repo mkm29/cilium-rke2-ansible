@@ -12,7 +12,7 @@ cilium_hubble_relay_prometheus_enabled: true
 cilium_hubble_relay_service_monitor_enabled: false
 cilium_hubble_ui_enabled: true
 cilium_hubble_ui_base_url: "/"
-cilium_cilium_version: "1.16.1"
+cilium_cilium_version: "1.17.0"
 cilium_operator_prometheus_enabled: true
 cilium_operator_prometheus_service_monitor_enabled: false
 cilium_operator_dashboards_enabled: true

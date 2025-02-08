@@ -40,6 +40,15 @@ hubble:
       enabled: {{ cilium_hubble_ui_ingress_enabled | to_yaml | lower }}
       hosts: 
       - {{ cilium_hubble_ui_ingress_hosts }}
+
+ dropEventEmitter:
+   # default to false if variable is not set
+   enabled: {{ cilium_drop_event_emitter_enabled | default(false) | to_yaml | lower }}
+   interval: {{ cilium_drop_event_emitter_interval | default("2m") }}
+   # ref: https://docs.cilium.io/en/stable/_api/v1/flow/README/#dropreason
+   # default Reasons to "auth_required","policy_denied" if variable is not set
+   Reasons: {{ cilium_drop_event_emitter_reasons | default("auth_required,policy_denied") }}
+
 version: {{ cilium_cilium_version }}
 operator:
   replicas: 1
@@ -114,3 +123,8 @@ encryption:
     allowRemoteNodeIdentities: true
     cidr: {{ rke2_cluster_cidr }}
 {% endif %}
+
+gatewayAPI:
+  enabled: {{ cilium_gateway_api_enabled | to_yaml | lower }}
+  hostNetwork:
+    enabled: {{ cilium_gateway_api_host_network_enabled | to_yaml | lower }}

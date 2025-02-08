@@ -8,7 +8,7 @@ I manage my Kubernetes clusters using a GitOps approach, utilizing ArgoCD to dep
 
 Previously, setting up Cilium Cluster Mesh involved several manual steps, such as creating and copying certificates required for establishing connections between clusters. However, starting with Cilium version 1.14.0, the Cilium Helm chart allows administrators to configure Cluster Mesh using the GitOps approach. By simply installing the Cilium Helm chart with the appropriate values, Cluster Mesh becomes operational immediately.
 
-In this article, I will detail the steps to deploy and configure Kubernetes clusters interconnected with Cilium Cluster Mesh using the Cilium Helm Chart, version 1.16.1.
+In this article, I will detail the steps to deploy and configure Kubernetes clusters interconnected with Cilium Cluster Mesh using the Cilium Helm Chart, version 1.17.0.
 
 ## Ansible
 

@@ -1,20 +1,17 @@
----
 - name: Add Helm Repo
   kubernetes.core.helm_repository:
     name: cilium
     repo_url: https://helm.cilium.io/
-
 # if kubeconfig variable is not defined, set it from file
 - name: Set kubeconfig from file
   set_fact:
     kubeconfig: "{{ lookup('file', '{{ playbook_dir }}/files/tmp/{{ rke2_cluster_name }}-kubeconfig') }}"
   when: kubeconfig is not defined
-
 - name: Install Cilium Helm Chart
   kubernetes.core.helm:
     name: cilium
     chart_ref: cilium/cilium
-    version: "1.16.1"
+    version: "1.17.0"
     namespace: kube-system
     values_files:
       - "{{playbook_dir}}/files/tmp/{{ rke2_cluster_name }}-cilium-values.yaml"

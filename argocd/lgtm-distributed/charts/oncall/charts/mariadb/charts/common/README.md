@@ -57,7 +57,7 @@ repository:
 tag:
   type: string
   description: image tag
-  example: 1.16.1-debian-10-r63
+  example: 1.17.0-debian-10-r63
 
 pullPolicy:
   type: string
@@ -77,7 +77,7 @@ debug:
 ## An instance would be:
 # registry: docker.io
 # repository: bitnami/nginx
-# tag: 1.16.1-debian-10-r63
+# tag: 1.17.0-debian-10-r63
 # pullPolicy: IfNotPresent
 # debug: false
 ```
