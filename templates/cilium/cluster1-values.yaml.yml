@@ -103,6 +103,4 @@ encryption:
     allowRemoteNodeIdentities: true
     cidr: 10.45.0.0/16
 
-http://lgtm-distributed-mimir-nginx.monitoring.svc.cluster.local/api/v1/push
-
 
